@@ -1,0 +1,20 @@
+# Python bytecode/dependencies/builds
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+
+# Environment variables and secrets
+.env
+.flaskenv
+secrets.toml
+
+# Logs and databases
+*.log
+test_db.db
+
+# Editors
+.vscode/
+.idea/
