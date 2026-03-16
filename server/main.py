@@ -32,11 +32,11 @@ def get_db():
 async def root():
     return {"message": "Hello, World!"}
 
-@app.get("/checkthekey")
+@app.get("/check_api")
 async def checkapi():
     return {"key found": bool(apikey), "prefix":apikey if apikey else "Not found"}
 
-@app.post("/save-rates")
+@app.post("/save_rates")
 async def save_rates(payload: dict, db: Session = Depends(get_db)):
     # 1. Extract the base and the rates dictionary
     base_currency = payload.get("base")
@@ -84,7 +84,7 @@ async def getrate(base_currency: str):
         except Exception:
             raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.api_route("/fetchtodb/{base_currency}", methods=["GET", "POST"])
+@app.api_route("/fetch_to_db/{base_currency}", methods=["GET", "POST"])
 def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
     """
     Fetch rates using the Python 'requests' library and save them directly.
