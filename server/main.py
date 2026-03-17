@@ -11,6 +11,7 @@ from .database import SessionLocal
 from datetime import datetime, timezone
 from pathlib import Path
 from decimal import Decimal
+from sqlalchemy import func
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_PATH)
@@ -63,7 +64,13 @@ async def getrate(base_currency: str):
 
 @app.api_route("/fetch_and_save/{base_currency}", methods=["GET", "POST"])
 async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
-
+    
+    
+    utc_now = datetime.now(timezone.utc)
+    latest_row = db.query(ExchangeRate).filter(func.date(ExchangeRate.created_at) == utc_now.date(), ExchangeRate.base_currency == base_currency).first()
+    if latest_row:
+        return {"message": f"Already updated {base_currency} for today's date (UTC)."}
+    
     base_currency = base_currency.upper()
     if not apikey:
         raise HTTPException(status_code=500, detail="API_KEY is missing. Set API_KEY in environment.")
@@ -104,7 +111,7 @@ async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
             # If using a standard synchronous SessionLocal, keep it as 'db.commit()'.
             db.commit() 
 
-            return {"message": f"Saved {len(rates)} rates for {base}", "base": base}
+            return {"message": f"Saved {len(rates)} rates for {base}"}
             
         except httpx.RequestError as exc:
             raise HTTPException(status_code=503, detail=f"Network error: {exc}")
