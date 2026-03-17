@@ -67,7 +67,7 @@ async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
     
     
     utc_now = datetime.now(timezone.utc)
-    latest_row = db.query(ExchangeRate).filter(func.date(ExchangeRate.created_at) == utc_now.date(), ExchangeRate.base_currency == base_currency).first()
+    latest_row = db.query(ExchangeRate).filter(func.date(ExchangeRate.created_at) == utc_now.date(), ExchangeRate.base_currency == base_currency.upper()).first()
     if latest_row:
         return {"message": f"Already updated {base_currency} for today's date (UTC)."}
     
