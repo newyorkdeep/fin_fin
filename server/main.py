@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import requests
 import os
@@ -17,6 +18,22 @@ ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_PATH)
 app = FastAPI()
 apikey=os.getenv('API_KEY')
+
+origins = [
+    "http://localhost:3000",   # Default for many React/Vite templates
+    "http://127.0.0.1:3000",
+    "http://localhost:8081",
+    "http://localhost:19006",  # Common default for Expo web
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      # List of allowed origins
+    allow_credentials=True,     # Allow cookies and auth headers
+    allow_methods=["*"],        # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],        # Allow all headers
+    max_age=600,
+)
 
 @app.on_event("startup")
 def startup_create_tables():

@@ -1,0 +1,27 @@
+{
+  "name": "fin_fin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "set PYTHONIOENCODING=utf-8 && set PYTHONUNBUFFERED=1 && fastapi dev server/main.py",
+    "client": "cd client && npx expo start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/newyorkdeep/fin_fin.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/newyorkdeep/fin_fin/issues"
+  },
+  "homepage": "https://github.com/newyorkdeep/fin_fin#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
