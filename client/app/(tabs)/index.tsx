@@ -2,9 +2,11 @@ import { StyleSheet } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
+import { Picker } from '@react-native-picker/picker';
 
 export default function TabOneScreen() {
   const [message, setMessage] = useState('Loading...');
+  const [currency, setCurrency] = useState('USD');
   
   useEffect(() => {
     const API_URL = "http://127.0.0.1:8000";
@@ -19,7 +21,15 @@ export default function TabOneScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>{message}</Text>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+      <Text>Current rate for:</Text>
+      <Picker 
+        selectedValue={currency}
+        onValueChange={(itemValue)=>setCurrency(itemValue)}
+        >
+          <Picker.Item label="USD - US Dollar" value="USD" />
+          <Picker.Item label="EUR - Euro" value="EUR" />
+          <Picker.Item label="GBP - British Pound" value="GBP" />
+        </Picker>
     </View>
   );
 }
