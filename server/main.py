@@ -48,7 +48,7 @@ def get_db():
 
 @app.get("/")
 async def root():
-    return {"message": "Hello, World!"}
+    return {"message": "Welcome to the financial dashboard where you can get up to speed on exchange rates and crypto"}
 
 @app.get("/check_api")
 async def checkapi():
