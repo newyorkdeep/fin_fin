@@ -15,11 +15,56 @@ from decimal import Decimal
 from sqlalchemy import func
 import json
 from contextlib import asynccontextmanager
+import logging
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_PATH)
-app = FastAPI()
 apikey=os.getenv('API_KEY')
+
+# 1. Stop Uvicorn from repeating startup messages
+#logging.getLogger("uvicorn.error").propagate = False
+# 2. Stop the "Will watch for changes..." messages from watchfiles
+logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
+# 3. (Optional) Stop SQLAlchemy from logging every database check
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
+FILE_PATH = "avaliable_currencies.json"
+
+async def fetch_supported_codes():
+    # Use the global apikey defined above
+    if not apikey:
+        print("CRITICAL ERROR: API_KEY is missing from .env file!")
+        return # Stop here if no key
+
+    url = f"https://v6.exchangerate-api.com/v6/{apikey}/codes"
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("result") == "success":
+                codes = data.get("supported_codes", [])
+                with open(FILE_PATH, "w") as f: 
+                    json.dump({"currencies": codes}, f, indent=2)
+                print(f"✅ Successfully saved {len(codes)} codes to {FILE_PATH}")
+            else:
+                print(f"❌ API returned an error: {data.get('error-type')}")
+        except Exception as e: 
+            print(f"❌ Network Error: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Check if file exists
+    if not os.path.exists(FILE_PATH):
+        print('🚀 currencies.json does not exist. Calling the API...')
+        await fetch_supported_codes()
+    else: 
+        print('📂 currencies.json found. Skipping API call.')
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:3000",   # Default for many React/Vite templates
@@ -81,11 +126,6 @@ async def getrate(base_currency: str):
             raise
         except Exception:
             raise HTTPException(status_code=500, detail="Internal server error")
-        
-@app.get("/supported_codes")
-async def supported_codes():
-    avaliable_codes = []
-
 
 @app.api_route("/fetch_and_save/{base_currency}", methods=["GET", "POST"])
 async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):

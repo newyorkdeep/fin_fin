@@ -33,6 +33,7 @@ secrets.toml
 *.log
 test_db.db
 app.db
+avaliable_currencies.json
 
 # Editors
 .vscode/
