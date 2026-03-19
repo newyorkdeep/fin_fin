@@ -6,8 +6,10 @@ import { Picker } from '@react-native-picker/picker';
 
 export default function TabOneScreen() {
   const [message, setMessage] = useState('Loading...');
-  const [currency, setCurrency] = useState('USD');
-  
+  const [baseCurrency, setBaseCurrency] = useState('USD');
+  const [targetCurrency, setTargetCurrency] = useState('USD');
+  const [currencies, setCurrencies] = useState([]);
+
   useEffect(() => {
     const API_URL = "http://127.0.0.1:8000";
 
@@ -17,19 +19,28 @@ export default function TabOneScreen() {
       .catch(err => console.error("Connection problem", err));
   }, []);
 
+  useEffect(() => {
+    const API_URL = "http://127.0.0.1:8000/supported_codes";
+
+    fetch(API_URL)
+      .then
+  }, []);
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{message}</Text>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
       <Text>Current rate for:</Text>
-      <Picker 
-        selectedValue={currency}
-        onValueChange={(itemValue)=>setCurrency(itemValue)}
-        >
-          <Picker.Item label="USD - US Dollar" value="USD" />
-          <Picker.Item label="EUR - Euro" value="EUR" />
-          <Picker.Item label="GBP - British Pound" value="GBP" />
-        </Picker>
+      <Picker selectedValue={baseCurrency} onValueChange={(itemValue)=>setBaseCurrency(itemValue)}>
+        <Picker.Item label="USD - US Dollar" value="USD" />
+        <Picker.Item label="EUR - Euro" value="EUR" />
+        <Picker.Item label="GBP - British Pound" value="GBP" />
+      </Picker>
+      <Picker selectedValue={targetCurrency} onValueChange={(itemValue)=>setTargetCurrency(itemValue)}>
+        <Picker.Item label="USD - US Dollar" value="USD" />
+        <Picker.Item label="EUR - Euro" value="EUR" />
+        <Picker.Item label="GBP - British Pound" value="GBP" />
+      </Picker>
     </View>
   );
 }

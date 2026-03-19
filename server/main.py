@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from decimal import Decimal
 from sqlalchemy import func
+import json
+from contextlib import asynccontextmanager
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_PATH)
@@ -79,6 +81,11 @@ async def getrate(base_currency: str):
             raise
         except Exception:
             raise HTTPException(status_code=500, detail="Internal server error")
+        
+@app.get("/supported_codes")
+async def supported_codes():
+    avaliable_codes = []
+
 
 @app.api_route("/fetch_and_save/{base_currency}", methods=["GET", "POST"])
 async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
