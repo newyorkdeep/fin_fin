@@ -58,10 +58,10 @@ async def fetch_supported_codes():
 async def lifespan(app: FastAPI):
     # Check if file exists
     if not os.path.exists(FILE_PATH):
-        print('🚀 currencies.json does not exist. Calling the API...')
+        print('🚀 avaliable_currencies.json does not exist. Calling the API...')
         await fetch_supported_codes()
     else: 
-        print('📂 currencies.json found. Skipping API call.')
+        print('📂 avaliable_currencies.json found. Skipping API call.')
     yield
 
 app = FastAPI(lifespan=lifespan)
