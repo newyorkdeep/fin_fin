@@ -28,13 +28,12 @@ logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
 # 3. (Optional) Stop SQLAlchemy from logging every database check
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
-FILE_PATH = "avaliable_currencies.json"
+FILE_PATH = "client/avaliable_currencies.json"
 
 async def fetch_supported_codes():
-    # Use the global apikey defined above
     if not apikey:
         print("CRITICAL ERROR: API_KEY is missing from .env file!")
-        return # Stop here if no key
+        return 
 
     url = f"https://v6.exchangerate-api.com/v6/{apikey}/codes"
     
@@ -46,6 +45,7 @@ async def fetch_supported_codes():
             
             if data.get("result") == "success":
                 codes = data.get("supported_codes", [])
+                os.makedirs(os.path.dirname(FILE_PATH), exist_ok=True) #ensuring the directory exists to prevent crash
                 with open(FILE_PATH, "w") as f: 
                     json.dump({"currencies": codes}, f, indent=2)
                 print(f"✅ Successfully saved {len(codes)} codes to {FILE_PATH}")
