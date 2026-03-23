@@ -12,7 +12,7 @@ from .database import SessionLocal
 from datetime import datetime, timezone
 from pathlib import Path
 from decimal import Decimal
-from sqlalchemy import func
+from sqlalchemy import func, and_
 import json
 from contextlib import asynccontextmanager
 import logging
@@ -103,7 +103,19 @@ async def checkapi():
     return {"key found": bool(apikey), "prefix":apikey[:4] + "****" if apikey else "Not found"}
 
 @app.get("/rates/{base_currency}")
-async def getrate(base_currency: str):
+async def getrate(base_currency: str, db: Session = Depends(get_db)):
+    # Finding the latest timestamp for each target currency and placing it in a subquery
+    subquery = (db.query(models.ExchangeRate.target_currency, func.max(models.ExchangeRate.created_at).label("latest_timestamp")).filter(models.ExchangeRate.base_currency == base_currency.upper()).group_by(models.ExchangeRate.target_currency).subquery())
+    # Rates are gonna be the latest ones
+    rates = (db.query(models.ExchangeRate).join(subquery, and_ (models.ExchangeRate.target_currency == subquery.c.target_currency, models.ExchangeRate.created_at == subquery.c.latest_timestamp)).all())
+
+    if not rates:
+        raise HTTPException(status_code=404, detail=f"No rates found for {base_currency}")
+
+    return rates
+
+@app.get("getrateviaapi/{base_currency}")
+async def getrateviaapi(base_currency: str):
     base_currency=base_currency.upper()
     if not apikey:
         raise HTTPException(status_code=500, detail="API_KEY is missing. Set API_KEY in environment.")
