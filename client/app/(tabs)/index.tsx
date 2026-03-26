@@ -22,7 +22,8 @@ export default function TabOneScreen() {
   const currencyData = require('../../avaliable_currencies.json');
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/rates/USD') 
+    setLoadingRates(true);
+    fetch(`http://127.0.0.1:8000/rates/{baseCurrency}`) 
       .then((response) => response.json())
       .then((data) => {
         setDisplayedRates(data);
@@ -32,7 +33,7 @@ export default function TabOneScreen() {
         console.error("Fetch error:", error);
         setLoadingRates(false);
       });
-  }, []);
+  }, [baseCurrency]);
 
   if (loadingRates) {
     return (
