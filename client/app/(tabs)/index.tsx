@@ -22,12 +22,14 @@ export default function TabOneScreen() {
   const currencyData = require('../../avaliable_currencies.json');
 
   useEffect(() => {
+    console.log("⚠️FETCH STARTING FOR:", baseCurrency);
     setLoadingRates(true);
-    fetch(`http://127.0.0.1:8000/rates/{baseCurrency}`) 
+    fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`) 
       .then((response) => response.json())
       .then((data) => {
         setDisplayedRates(data);
         setLoadingRates(false);
+        console.log("⚠️THE FETCHED DATA IS:", data);
       })
       .catch((error) => {
         console.error("Fetch error:", error);
@@ -89,7 +91,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    //justifyContent: 'center',
+    width: '100%',
   },
   title: {
     fontSize: 20,

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import requests
@@ -58,10 +58,10 @@ async def fetch_supported_codes():
 async def lifespan(app: FastAPI):
     # Check if file exists
     if not os.path.exists(FILE_PATH):
-        print('🚀 avaliable_currencies.json does not exist. Calling the API...')
+        print('     📞 avaliable_currencies.json does not exist. Calling the API...')
         await fetch_supported_codes()
     else: 
-        print('📂 avaliable_currencies.json found. Skipping API call.')
+        print('     💾 avaliable_currencies.json found. Skipping API call.')
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -138,6 +138,14 @@ async def getrateviaapi(base_currency: str):
             raise
         except Exception:
             raise HTTPException(status_code=500, detail="Internal server error")
+
+def fetch_and_save_all(db: Session = Depends(get_db)):
+    pass
+
+@app.api_route("/fetch_and_save/all", methods=["GET, POST"])
+async def fetch_and_save_all(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    background_tasks.add_task(fetch_and_save_all, db)
+    return {"message": "Update started for all currencies. This may take a while."}
 
 @app.api_route("/fetch_and_save/{base_currency}", methods=["GET", "POST"])
 async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
