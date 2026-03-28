@@ -16,6 +16,8 @@ from sqlalchemy import func, and_
 import json
 from contextlib import asynccontextmanager
 import logging
+from pydantic import BaseModel
+from typing import List
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_PATH)
@@ -139,13 +141,6 @@ async def getrateviaapi(base_currency: str):
         except Exception:
             raise HTTPException(status_code=500, detail="Internal server error")
 
-def fetch_and_save_all(db: Session = Depends(get_db)):
-    pass
-
-@app.api_route("/fetch_and_save/all", methods=["GET, POST"])
-async def fetch_and_save_all(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    background_tasks.add_task(fetch_and_save_all, db)
-    return {"message": "Update started for all currencies. This may take a while."}
 
 @app.api_route("/fetch_and_save/{base_currency}", methods=["GET", "POST"])
 async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):

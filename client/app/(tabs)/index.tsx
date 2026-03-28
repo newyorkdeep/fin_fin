@@ -3,6 +3,9 @@ import React, { useEffect, useState } from 'react';
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
 import { Picker } from '@react-native-picker/picker';
+import { Themes } from '../../themes';
+import { getTheme, saveTheme } from '../../themes_logic'; 
+import { DeviceEventEmitter } from 'react-native';
 
 interface ExchangeRate {
   id: number;
@@ -20,32 +23,68 @@ export default function TabOneScreen() {
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
   const currencyData = require('../../avaliable_currencies.json');
+  const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
+
 
   useEffect(() => {
-    console.log("⚠️FETCH STARTING FOR:", baseCurrency);
-    setLoadingRates(true);
-    fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`) 
-      .then((response) => response.json())
-      .then((data) => {
-        setDisplayedRates(data);
+    const subscription = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
+      setSelectedTheme(newTheme);
+    });
+
+    // 2. Initial Load
+    getTheme().then(saved => setSelectedTheme(saved as any));
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleThemeChange = async (itemValue: keyof typeof Themes) => {
+    setSelectedTheme(itemValue); // Changes the colors NOW
+    await saveTheme(itemValue);  // Saves to AsyncStorage for NEXT TIME
+    DeviceEventEmitter.emit('themeChanged', itemValue); // Broadcasting the new theme to all the screens and tabs 
+  };
+
+  const colors = Themes[selectedTheme];
+
+  useEffect(() => {
+    const getRates = async () => {
+      console.log("⚠️FETCH STARTING FOR:", baseCurrency);
+      setLoadingRates(true);
+
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`);
+        const data = await response.json();
+
+        if (response.status === 404 || !data || data.length === 0) {
+          console.log('Empty or not found. Syncing with external API...');
+          const syncResponse = await fetch(`http://127.0.0.1:8000/fetch_and_save/${baseCurrency}`, { method: "POST" });
+
+          if (syncResponse.ok) {
+            const retry = await fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`);
+            const freshData = await retry.json();
+            setDisplayedRates(freshData);    
+          }
+        } else {
+          setDisplayedRates(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
         setLoadingRates(false);
-        console.log("⚠️THE FETCHED DATA IS:", data);
-      })
-      .catch((error) => {
-        console.error("Fetch error:", error);
-        setLoadingRates(false);
-      });
+      }
+    };
+
+    if (baseCurrency) getRates();
   }, [baseCurrency]);
 
   if (loadingRates) {
     return (
       <View>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#2be8f1" />
       </View>
     );
   }
 
-/* this was used before to show the welcome message from the servers main endpoint
+  /* this was used before to show the welcome message from the servers main endpoint
   useEffect(() => {
     const API_URL = "http://127.0.0.1:8000";
 
@@ -54,12 +93,12 @@ export default function TabOneScreen() {
       .then(data => setMessage(data.message))
       .catch(err => console.error("Connection problem", err));
   }, []);
-*/ 
+  */ 
 
   return (
-    <View style={styles.container}>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+    <View style={[styles.container, {backgroundColor: colors.background}]}>
       <Text>Base currency:</Text>
+      
       <Picker
         //style={{ width: '25%', height: 50 }} 
         selectedValue={baseCurrency} 
@@ -83,6 +122,7 @@ export default function TabOneScreen() {
           </View>
         )}
       />
+      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
     </View>
   );
 }
@@ -114,7 +154,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   rateText: {
-    color: '#2ecc71', 
+    color: '#9b66a6', 
     fontWeight: 'bold',
   },
   dateText: {
