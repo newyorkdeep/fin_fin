@@ -44,6 +44,7 @@ export default function TabLayout() {
         options={{
           title: 'Tab One',
           tabBarStyle: styles.tabBar,
+          headerShown: false,
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{
@@ -76,6 +77,7 @@ export default function TabLayout() {
         options={{
           title: 'Tab Two',
           tabBarStyle: styles.tabBar,
+          headerShown: false,
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{

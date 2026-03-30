@@ -22,10 +22,30 @@ export default function TabTwoScreen() {
   };
 
   const colors = Themes[selectedTheme];
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      color: colors.text,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    separator: {
+      marginVertical: 30,
+      height: 1,
+      width: '80%',
+    },
+  });
   
   return (
-    <View style={[styles.container, {backgroundColor: colors.background}]}>
-      <Text style={[styles.title, {color: colors.text}]}>Tab Two</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Tab Two</Text>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
       <Text style={{ color: colors.text, marginBottom: 10 }}>Select App Theme:</Text>
       <Picker
@@ -46,20 +66,3 @@ export default function TabTwoScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});
