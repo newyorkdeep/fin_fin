@@ -95,6 +95,44 @@ export default function TabOneScreen() {
   }, []);
   */ 
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      //justifyContent: 'center',
+      width: '100%',
+      color: 'colo'
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    separator: {
+      marginVertical: 30,
+      height: 1,
+      width: '80%',
+    },
+    item: {
+      padding: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+      backgroundColor: '#fff',
+    },
+    currencyText: {
+      fontSize: 18, 
+      fontWeight: '500',
+    },
+    rateText: {
+      color: '#9b66a6', 
+      fontWeight: 'bold',
+    },
+    dateText: {
+      fontSize: 12, 
+      color: '#888', 
+      marginTop: 4,
+    }
+  });
+
   return (
     <View style={[styles.container, {backgroundColor: colors.background}]}>
       <Text>Base currency:</Text>
@@ -126,40 +164,3 @@ export default function TabOneScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    //justifyContent: 'center',
-    width: '100%',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-  item: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  currencyText: {
-    fontSize: 18, 
-    fontWeight: '500',
-  },
-  rateText: {
-    color: '#9b66a6', 
-    fontWeight: 'bold',
-  },
-  dateText: {
-    fontSize: 12, 
-    color: '#888', 
-    marginTop: 4,
-  }
-});

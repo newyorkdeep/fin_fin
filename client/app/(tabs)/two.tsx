@@ -41,28 +41,32 @@ export default function TabTwoScreen() {
       height: 1,
       width: '80%',
     },
+    picker: {
+      color: '#47473f',
+      paddingVertical: 14,
+      paddingHorizontal: 40,
+      borderRadius: 15,
+    }
   });
   
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
+      <Text style={styles.title}>Settings</Text>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
       <Text style={{ color: colors.text, marginBottom: 10 }}>Select App Theme:</Text>
       <Picker
         selectedValue={selectedTheme}
         onValueChange={(itemValue) => handleThemeChange(itemValue as keyof typeof Themes)}
-        style={{ color: colors.text}}
+        style={styles.picker}
         dropdownIconColor={colors.text}>
         {Object.keys(Themes).map((themeKey) => (
           <Picker.Item
             key={themeKey}
             label={themeKey.charAt(0).toUpperCase() + themeKey.slice(1)}
             value={themeKey}>
-
           </Picker.Item>
         ))}
       </Picker>
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
     </View>
   );
 }

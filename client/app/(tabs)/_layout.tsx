@@ -30,6 +30,24 @@ export default function TabLayout() {
 
   const colors = Themes[selectedTheme];
 
+  const styles = StyleSheet.create({
+    tabBar: {
+      position: 'absolute',
+      bottom: 25,       // Space from the bottom of the screen
+      left: 20,         // Margin on the left
+      right: 20,        // Margin on the right
+      height: 60,       // Fixed height
+      backgroundColor: colors.tabBar,
+      borderRadius: 30, // Half of height for perfect circles
+      borderTopWidth: 0,
+      elevation: 5,     // Shadow for Android
+      shadowColor: '#000', // Shadow for iOS
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+    },
+  });
+
   return (
     <Tabs
       screenOptions={{
@@ -94,21 +112,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    position: 'absolute',
-    bottom: 25,       // Space from the bottom of the screen
-    left: 20,         // Margin on the left
-    right: 20,        // Margin on the right
-    height: 60,       // Fixed height
-    backgroundColor: '#d1c09ebb', // Transparent a little for a glassy look
-    borderRadius: 30, // Half of height for perfect circles
-    borderTopWidth: 0,
-    elevation: 5,     // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-});
