@@ -8,14 +8,18 @@ const SharedLayout = {
 export const Themes = {
   light: {
     ...SharedLayout,
-    background: '#ece7d4',
+    background: '#f7f5ed',
     text: '#47473f',
-    tabBar: '#b3c297',
+    tabBar: '#cbd1d1',
+    activeicon: '#ffffff',
+    inactiveicon: '#757575', 
   },
   dark: {
     ...SharedLayout,
-    background: '#474545',
+    background: '#757575',
     text: '#FFFFFF',
-    tabBar: '#fdf1e2',
+    tabBar: '#474747',
+    activeicon: '#ffffff',
+    inactiveicon: '#747474'
   },
 };

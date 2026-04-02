@@ -78,8 +78,13 @@ export default function TabOneScreen() {
 
   if (loadingRates) {
     return (
-      <View>
-        <ActivityIndicator size="large" color="#2be8f1" />
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+      }}>
+        <ActivityIndicator size="small" color="#000000" />
       </View>
     );
   }
@@ -101,7 +106,8 @@ export default function TabOneScreen() {
       alignItems: 'center',
       //justifyContent: 'center',
       width: '100%',
-      color: 'colo'
+      color: colors.text,
+      backgroundColor: colors.background,
     },
     title: {
       fontSize: 20,
@@ -134,8 +140,8 @@ export default function TabOneScreen() {
   });
 
   return (
-    <View style={[styles.container, {backgroundColor: colors.background}]}>
-      <Text>Base currency:</Text>
+    <View style={styles.container}>
+      <Text style={{color: colors.text}}>Base currency:</Text>
       
       <Picker
         //style={{ width: '25%', height: 50 }} 
