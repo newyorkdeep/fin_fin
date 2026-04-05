@@ -34,9 +34,9 @@ export default function TabLayout() {
     tabBar: {
       position: 'absolute',
       bottom: 25,       // Space from the bottom of the screen
-      left: 20,         // Margin on the left
-      right: 20,        // Margin on the right
-      height: 60,       // Fixed height
+      left: 200,         // Margin on the left
+      right: 200,        // Margin on the right
+      height: 50,       // Fixed height
       backgroundColor: colors.tabBar,
       borderRadius: 30, // Half of height for perfect circles
       borderTopWidth: 0,

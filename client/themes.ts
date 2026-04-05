@@ -16,9 +16,9 @@ export const Themes = {
   },
   dark: {
     ...SharedLayout,
-    background: '#757575',
+    background: '#2d2d2d',
     text: '#FFFFFF',
-    tabBar: '#474747',
+    tabBar: '#595959',
     activeicon: '#ffffff',
     inactiveicon: '#747474'
   },

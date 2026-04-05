@@ -106,6 +106,20 @@ async def checkapi():
 
 @app.get("/rates/{base_currency}")
 async def getrate(base_currency: str, db: Session = Depends(get_db)):
+    
+    utc_now = datetime.now(timezone.utc)
+
+    exists_today = db.query(models.ExchangeRate.id).filter(
+        models.ExchangeRate.base_currency == base_currency,
+        models.ExchangeRate.created_at >= utc_now
+    ).first() is not None
+
+    if not exists_today:
+        try:
+            await fetch_and_save(base_currency, db=db);
+        except Exception as e:
+            print(f"API fetch failed: {e}")
+
     # Finding the latest timestamp for each target currency and placing it in a subquery
     subquery = (db.query(models.ExchangeRate.target_currency, func.max(models.ExchangeRate.created_at).label("latest_timestamp")).filter(models.ExchangeRate.base_currency == base_currency.upper()).group_by(models.ExchangeRate.target_currency).subquery())
     # Rates are gonna be the latest ones

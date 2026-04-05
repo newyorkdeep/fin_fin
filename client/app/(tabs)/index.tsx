@@ -122,11 +122,12 @@ export default function TabOneScreen() {
       padding: 15,
       borderBottomWidth: 1,
       borderBottomColor: '#eee',
-      backgroundColor: '#fff',
+      backgroundColor: '#fff',      
     },
     currencyText: {
       fontSize: 18, 
       fontWeight: '500',
+      alignSelf: 'center',
     },
     rateText: {
       color: '#9b66a6', 
@@ -136,15 +137,32 @@ export default function TabOneScreen() {
       fontSize: 12, 
       color: '#888', 
       marginTop: 4,
+      alignSelf: 'center',
+    },
+    picker: {
+      width: '15%',
+      alignSelf: 'center', // Centers the narrow picker horizontally
+      paddingVertical: 10,
+      paddingHorizontal: 0,
+      borderRadius: 15,
+      margin: 10,
+      backgroundColor: '#f0f0f0',
+      textAlign: 'center',
+    },
+    flatlist: {
+      width: '15%',
+      borderRadius: 10,
+      height: '40%',
+      flexGrow: 0, // Prevents stretching
+      overflow: 'hidden', // Required for borderRadius to clip content
+      textAlign: 'center',
     }
   });
 
   return (
     <View style={styles.container}>
-      <Text style={{color: colors.text}}>Base currency:</Text>
-      
       <Picker
-        //style={{ width: '25%', height: 50 }} 
+        style={styles.picker} 
         selectedValue={baseCurrency} 
         onValueChange={(itemValue) => setBaseCurrency(itemValue)}
       >  
@@ -153,12 +171,13 @@ export default function TabOneScreen() {
         ))}
       </Picker>
       <FlatList
-        data={displayedRates}
+        style={styles.flatlist}
+        data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
         keyExtractor={(item) => item.id.toString()} // Using the 'id' from your JSON
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Text style={styles.currencyText}>
-              1 {item.base_currency} = 
+              {/*1 {item.base_currency} = */}
               <Text style={styles.rateText}> {item.rate} </Text> 
               {item.target_currency}
             </Text>
