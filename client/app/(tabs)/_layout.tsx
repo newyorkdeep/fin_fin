@@ -32,10 +32,8 @@ export default function TabLayout() {
 
   const styles = StyleSheet.create({
     tabBar: {
-      position: 'absolute',
+      //position: 'absolute',
       bottom: 25,       // Space from the bottom of the screen
-      left: 200,         // Margin on the left
-      right: 200,        // Margin on the right
       height: 50,       // Fixed height
       backgroundColor: colors.tabBar,
       borderRadius: 30, // Half of height for perfect circles
@@ -45,12 +43,15 @@ export default function TabLayout() {
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.1,
       shadowRadius: 10,
+      alignSelf: "center",
+      width: "80%",
     },
   });
 
   return (
     <Tabs
       screenOptions={{
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.activeicon,
         tabBarInactiveTintColor: colors.inactiveicon,
         // Disable the static render of the header on web

@@ -6,6 +6,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Themes } from '../../themes';
 import { getTheme, saveTheme } from '../../themes_logic'; 
 import { DeviceEventEmitter } from 'react-native';
+import { LineChart } from "react-native-gifted-charts";
 
 interface ExchangeRate {
   id: number;
@@ -13,6 +14,12 @@ interface ExchangeRate {
   target_currency: string;
   rate: number;
   created_at: string;
+}
+
+interface ChartPoint {
+  value: number;
+  label: string;
+  dataPointText?: string;
 }
 
 export default function TabOneScreen() {
@@ -24,7 +31,13 @@ export default function TabOneScreen() {
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
   const currencyData = require('../../avaliable_currencies.json');
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
-
+  const data = [
+    { value: 15, label: 'Jan' },
+    { value: 30, label: 'Feb' },
+    { value: 26, label: 'Mar' },
+    { value: 40, label: 'Apr' },
+  ];
+  const [chartData, setChartData] = useState<ChartPoint[]>([]);
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
@@ -36,6 +49,20 @@ export default function TabOneScreen() {
 
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    if (displayedRates.length > 0) {
+      const formattedData: ChartPoint[] = displayedRates
+        .slice(0, 10)
+        .map((item) => ({
+          value: Number(item.rate), // Ensure it's a number
+          label: item.target_currency,
+          dataPointText: item.rate.toString(),
+        }));
+
+      setChartData(formattedData);
+    }
+  }, [displayedRates]);
 
   const handleThemeChange = async (itemValue: keyof typeof Themes) => {
     setSelectedTheme(itemValue); // Changes the colors NOW
@@ -99,6 +126,9 @@ export default function TabOneScreen() {
       .catch(err => console.error("Connection problem", err));
   }, []);
   */ 
+
+  // Calculating the data to show on the screen:
+  
 
   const styles = StyleSheet.create({
     container: {
@@ -184,6 +214,19 @@ export default function TabOneScreen() {
             <Text style={styles.dateText}>Updated: {new Date(item.created_at).toLocaleDateString()}</Text>
           </View>
         )}
+      />
+      <LineChart 
+        data={chartData} 
+        color={colors.text} // Use your theme color
+        thickness={3}
+        noOfSections={4}
+        areaChart // Optional: makes it look modern with a gradient
+        startFillColor="rgba(23, 122, 213, 0.3)"
+        endFillColor="rgba(23, 122, 213, 0.01)"
+        yAxisColor={colors.text}
+        xAxisColor={colors.text}
+        yAxisTextStyle={{color: colors.text}}
+        xAxisLabelTextStyle={{color: colors.text, fontSize: 10}}
       />
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
     </View>
