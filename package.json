@@ -11,8 +11,8 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "set PYTHONIOENCODING=utf-8 && set PYTHONUNBUFFERED=1 && fastapi dev server/main.py",
     "client": "cd client && npx expo start",
-    "dependencies": "npm install && pip install -r requirements.txt",
-    "freeze": "npm install && pip freeze > requirements.txt"
+    "dependencies": "npm ci && pip install -r requirements.txt",
+    "freeze": "npm ci && pip freeze > requirements.txt"
   },
   "repository": {
     "type": "git",
