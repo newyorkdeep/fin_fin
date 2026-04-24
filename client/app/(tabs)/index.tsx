@@ -29,7 +29,7 @@ export default function TabOneScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
-  const currencyData = require('../../avaliable_currencies.json');
+  const currencyData = require('../avaliable_currencies.json');
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
   const data = [
     { value: 15, label: 'Jan' },
