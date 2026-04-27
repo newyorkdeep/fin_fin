@@ -58,13 +58,20 @@ async def fetch_supported_codes():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Check if file exists
+    # 1. CREATE TABLES FIRST
+    # This ensures "exchange_rates" exists before any route is called
+    print("🚀 Initializing database tables...")
+    models.Base.metadata.create_all(bind=engine)
+    
+    # 2. Check for your JSON file
     if not os.path.exists(FILE_PATH):
-        print('     📞 avaliable_currencies.json does not exist. Calling the API...')
+        print('📞 avaliable_currencies.json does not exist. Calling the API...')
         await fetch_supported_codes()
     else: 
-        print('     💾 avaliable_currencies.json found. Skipping API call.')
+        print('💾 avaliable_currencies.json found. Skipping API call.')
+    
     yield
+    # Shutdown logic goes here if needed
 
 app = FastAPI(lifespan=lifespan)
 
@@ -85,9 +92,9 @@ app.add_middleware(
     max_age=600,
 )
 
-@app.on_event("startup")
-def startup_create_tables():
-    models.Base.metadata.create_all(bind=engine)
+#@app.on_event("startup") # OUTDATED FUNCTION 
+#def startup_create_tables():
+#    models.Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
