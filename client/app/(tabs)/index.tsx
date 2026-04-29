@@ -7,6 +7,7 @@ import { Themes } from '../../themes';
 import { getTheme, saveTheme } from '../../themes_logic'; 
 import { DeviceEventEmitter } from 'react-native';
 import { LineChart } from "react-native-gifted-charts";
+import { Dimensions } from 'react-native';
 
 interface ExchangeRate {
   id: number;
@@ -29,7 +30,8 @@ export default function TabOneScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
-  const currencyData = require('../../avaliable_currencies.json');
+  //const currencyData = require('../../avaliable_currencies.json');
+  const [currencyData, setCurrencyData] = useState<any>(null);
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
   const data = [
     { value: 15, label: 'Jan' },
@@ -38,6 +40,20 @@ export default function TabOneScreen() {
     { value: 40, label: 'Apr' },
   ];
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  
+  useEffect(() => {
+    const fetchCurrencies = async () => {
+      try {
+        // Use your computer's IP address instead of localhost!
+        const response = await fetch("http://localhost:8000/currencies"); 
+        const json = await response.json();
+        setCurrencyData(json);
+      } catch (error) {
+        console.error("Failed to fetch currencies:", error);
+      }
+    };
+    fetchCurrencies();
+  }, []);
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
@@ -116,6 +132,12 @@ export default function TabOneScreen() {
     );
   }
 
+  if (!currencyData) {
+    return <Text>Loading Currencies...</Text>;
+  }
+
+  const screenWidth = Dimensions.get('window').width;
+
   /* this was used before to show the welcome message from the servers main endpoint
   useEffect(() => {
     const API_URL = "http://127.0.0.1:8000";
@@ -129,106 +151,160 @@ export default function TabOneScreen() {
 
   // Calculating the data to show on the screen:
   
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: '#f5f5f7', // Light gray background to make platforms stand out
+      padding: 50,                  // Global padding so they don't touch screen edges
+    },
+    rowContainer: {
+      flex: 1,
+      flexDirection: 'row', 
+      backgroundColor: '#f5f5f7',
+    },
+    leftColumn: {
+      flex: 1,
+      // THE PLATEAU EFFECT
+      backgroundColor: '#fff',
+      borderRadius: 30,
+      marginRight: 25,           // Gap between the two platforms
+      padding: 25,
+      // Subtle Shadow
+      elevation: 3, 
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      overflow: 'hidden', // IMPORTANT: This clips children (like FlatList) to the rounded corners
+    },
+    rightColumn: {
+      flex: 1,
+      // THE PLATEAU EFFECT
+      backgroundColor: '#fff',
+      borderRadius: 30,
+      marginLeft: 25,            // Gap between the two platforms
+      padding: 15,
+      justifyContent: 'center',
       alignItems: 'center',
-      //justifyContent: 'center',
+      // Subtle Shadow
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      overflow: 'hidden', // IMPORTANT: This clips children (like FlatList) to the rounded corners
+    },
+    picker: {
+      width: '100%',        // Fill the left half
+      marginBottom: 20,
+      backgroundColor: '#f0f0f0',
+      borderRadius: 10,
+      borderWidth: 0,
+    },
+    flatlist: {
+      flex: 1,              // Let it take all remaining space in the left column
       width: '100%',
-      color: colors.text,
-      backgroundColor: colors.background,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: 'bold',
-    },
-    separator: {
-      marginVertical: 30,
-      height: 1,
-      width: '80%',
     },
     item: {
       padding: 15,
       borderBottomWidth: 1,
       borderBottomColor: '#eee',
-      backgroundColor: '#fff',      
+      //backgroundColor: '#fff',
+      borderRadius: 8,
+      marginBottom: 8,
+      backgroundColor: 'transparent', // Let the platform background show through
     },
     currencyText: {
-      fontSize: 18, 
+      fontSize: 18,
       fontWeight: '500',
-      alignSelf: 'center',
+      textAlign: 'center',
     },
     rateText: {
-      color: '#9b66a6', 
+      color: '#9b66a6',
       fontWeight: 'bold',
     },
     dateText: {
-      fontSize: 12, 
-      color: '#888', 
-      marginTop: 4,
-      alignSelf: 'center',
-    },
-    picker: {
-      width: '15%',
-      alignSelf: 'center', // Centers the narrow picker horizontally
-      paddingVertical: 10,
-      paddingHorizontal: 0,
-      borderRadius: 15,
-      margin: 10,
-      backgroundColor: '#f0f0f0',
+      fontSize: 12,
+      color: '#888',
       textAlign: 'center',
     },
-    flatlist: {
-      width: '15%',
-      borderRadius: 10,
-      height: '40%',
-      flexGrow: 0, // Prevents stretching
-      overflow: 'hidden', // Required for borderRadius to clip content
-      textAlign: 'center',
-    }
   });
 
   return (
     <View style={styles.container}>
-      <Picker
-        style={styles.picker} 
-        selectedValue={baseCurrency} 
-        onValueChange={(itemValue) => setBaseCurrency(itemValue)}
-      >  
-        {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-          <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-        ))}
-      </Picker>
-      <FlatList
-        style={styles.flatlist}
-        data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
-        keyExtractor={(item) => item.id.toString()} // Using the 'id' from your JSON
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Text style={styles.currencyText}>
-              {/*1 {item.base_currency} = */}
-              <Text style={styles.rateText}> {item.rate} </Text> 
-              {item.target_currency}
-            </Text>
-            <Text style={styles.dateText}>Updated: {new Date(item.created_at).toLocaleDateString()}</Text>
-          </View>
-        )}
-      />
-      <LineChart 
-        data={chartData} 
-        color={colors.text} // Use your theme color
-        thickness={3}
-        noOfSections={4}
-        areaChart // Optional: makes it look modern with a gradient
-        startFillColor="rgba(23, 122, 213, 0.3)"
-        endFillColor="rgba(23, 122, 213, 0.01)"
-        yAxisColor={colors.text}
-        xAxisColor={colors.text}
-        yAxisTextStyle={{color: colors.text}}
-        xAxisLabelTextStyle={{color: colors.text, fontSize: 10}}
-      />
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <View style={styles.rowContainer}>
+
+      {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
+      <View style={styles.leftColumn}>
+        <Picker
+          style={styles.picker} 
+          mode="dropdown"
+          selectedValue={baseCurrency} 
+          onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+        >  
+          {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+            <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+          ))}
+        </Picker>
+
+        <FlatList
+          style={styles.flatlist}
+          data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
+          keyExtractor={(item) => item.id.toString()}
+          showsVerticalScrollIndicator={false} // THIS REMOVES THE SHARP CORNER LINE
+          contentContainerStyle={{ paddingBottom: 20 }} // Adds space at the bottom so last item isn't cut off
+          renderItem={({ item }) => (
+            <View style={styles.item}>
+              <Text style={styles.currencyText}>
+                <Text style={styles.rateText}> {item.rate} </Text> 
+                {item.target_currency}
+              </Text>
+              <Text style={styles.dateText}>
+                Updated: {new Date(item.created_at).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
+        />
+      </View>
+
+      {/* RIGHT SIDE: Graph (50%) */}
+      <View style={styles.rightColumn}>
+        <LineChart
+          areaChart
+          curved
+          data={chartData}
+          
+          // SIZING - Adjust these to fill your plateau
+          width={screenWidth / 2 - 50} 
+          height={450}               // Increase this until it matches the left side
+          adjustToWidth={true}       // Stretches the line to fill the width
+          initialSpacing={0}         // Removes the left-side gap
+          endSpacing={0}             // Removes the right-side gap
+
+          maxValue={1600}         // ~15% higher than the highest data point
+          noOfSections={6}        // Helps redistribute the Y-axis labels
+          spacing={50}            // Increases horizontal space between points if needed
+          yAxisLabelContainerStyle={{marginBottom: 20}} 
+          
+          // STYLING
+          color={colors.tabBar || "#177AD5"} 
+          thickness={3}              // Thicker line looks better on large graphs
+          hideDataPoints
+          hideRules
+          yAxisThickness={0}
+          xAxisThickness={0}
+          
+          // Make sure labels don't push the graph up
+          xAxisLabelTextStyle={{ color: 'gray', fontSize: 10 }}
+          yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
+
+          rotateLabel
+          startFillColor={colors.text}  
+          endFillColor={colors.text}
+          gradientDirection="vertical"
+        />
+      </View>
+      </View>
     </View>
   );
 }

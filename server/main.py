@@ -30,7 +30,7 @@ logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
 # 3. (Optional) Stop SQLAlchemy from logging every database check
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
-FILE_PATH = "../avaliable_currencies.json"
+FILE_PATH = "../server/avaliable_currencies.json"
 
 async def fetch_supported_codes():
     if not apikey:
@@ -110,6 +110,11 @@ async def root():
 @app.get("/check_api")
 async def checkapi():
     return {"key found": bool(apikey), "prefix":apikey[:4] + "****" if apikey else "Not found"}
+
+@app.get("/currencies")
+def get_currencies():
+    with open("../server/avaliable_currencies.json", "r") as f:
+        return json.load(f)
 
 @app.get("/rates/{base_currency}")
 async def getrate(base_currency: str, db: Session = Depends(get_db)):
