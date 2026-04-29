@@ -275,15 +275,15 @@ export default function TabOneScreen() {
           data={chartData}
           
           // SIZING - Adjust these to fill your plateau
-          width={screenWidth / 2 - 50} 
+          width={screenWidth / 2 - 140} 
           height={450}               // Increase this until it matches the left side
           adjustToWidth={true}       // Stretches the line to fill the width
           initialSpacing={0}         // Removes the left-side gap
-          endSpacing={0}             // Removes the right-side gap
+          endSpacing={40}             // Removes the right-side gap
 
           maxValue={1600}         // ~15% higher than the highest data point
           noOfSections={6}        // Helps redistribute the Y-axis labels
-          spacing={50}            // Increases horizontal space between points if needed
+          //spacing={50}            // Increases horizontal space between points if needed
           yAxisLabelContainerStyle={{marginBottom: 20}} 
           
           // STYLING
@@ -295,7 +295,7 @@ export default function TabOneScreen() {
           xAxisThickness={0}
           
           // Make sure labels don't push the graph up
-          xAxisLabelTextStyle={{ color: 'gray', fontSize: 10 }}
+          xAxisLabelTextStyle={{ color: 'gray', fontSize: 10, width: 60, textAlign: 'right' }}
           yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
 
           rotateLabel
