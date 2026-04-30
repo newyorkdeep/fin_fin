@@ -154,13 +154,13 @@ export default function TabOneScreen() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#f5f5f7', // Light gray background to make platforms stand out
+      backgroundColor: colors.background,
       padding: 50,                  // Global padding so they don't touch screen edges
     },
     rowContainer: {
       flex: 1,
       flexDirection: 'row', 
-      backgroundColor: '#f5f5f7',
+      backgroundColor: colors.background,
     },
     leftColumn: {
       flex: 1,

@@ -8,7 +8,7 @@ const SharedLayout = {
 export const Themes = {
   light: {
     ...SharedLayout,
-    background: '#f7f5ed',
+    background: '#f5f5f7',
     text: '#47473f',
     tabBar: '#cbd1d1',
     activeicon: '#47473f',
