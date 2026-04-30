@@ -302,6 +302,9 @@ export default function TabOneScreen() {
           startFillColor={colors.text}  
           endFillColor={colors.text}
           gradientDirection="vertical"
+
+          xAxisLabelsHeight={50}
+          xAxisLabelsVerticalShift={30} 
         />
       </View>
       </View>
