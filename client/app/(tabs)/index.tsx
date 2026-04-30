@@ -29,6 +29,7 @@ export default function TabOneScreen() {
   const [targetCurrency, setTargetCurrency] = useState('USD');
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
+  const [allRates, setAllRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
   //const currencyData = require('../../avaliable_currencies.json');
   const [currencyData, setCurrencyData] = useState<any>(null);
@@ -65,7 +66,8 @@ export default function TabOneScreen() {
 
     return () => subscription.remove();
   }, []);
-
+  
+  /* OLD USEEFFECT THAT WAS SHOWING NONSENSE AND WAS USED AS A PLACEHOLDER
   useEffect(() => {
     if (displayedRates.length > 0) {
       const formattedData: ChartPoint[] = displayedRates
@@ -79,6 +81,32 @@ export default function TabOneScreen() {
       setChartData(formattedData);
     }
   }, [displayedRates]);
+  */
+
+  useEffect(() => {
+    if (allRates.length > 0) {
+      const formattedData: ChartPoint[] = allRates
+        // 1. Only grab rates where base is USD and target is AED
+        .filter(item => 
+          item.base_currency.trim().toUpperCase() === "USD" && 
+          item.target_currency.trim().toUpperCase() === "AED"
+        )
+        // 2. Chronological order (oldest to newest)
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        // 3. Map to your ChartPoint interface
+        .map((item) => ({
+          value: Number(item.rate),
+          // Shows time like "10:30 AM" for the x-axis
+          label: new Date(item.created_at).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          dataPointText: item.rate.toFixed(2), // Rounds to 2 decimals for cleaner display
+        }));
+
+      setChartData(formattedData);
+    }
+  }, [allRates]); // targetCurrency is gone from here since it's hardcoded
 
   const handleThemeChange = async (itemValue: keyof typeof Themes) => {
     setSelectedTheme(itemValue); // Changes the colors NOW
@@ -95,7 +123,9 @@ export default function TabOneScreen() {
 
       try {
         const response = await fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`);
+        const response_all = await fetch(`http://127.0.0.1:8000/all_rates/${baseCurrency}`);
         const data = await response.json();
+        const data_all = await response_all.json();
 
         if (response.status === 404 || !data || data.length === 0) {
           console.log('Empty or not found. Syncing with external API...');
@@ -103,11 +133,15 @@ export default function TabOneScreen() {
 
           if (syncResponse.ok) {
             const retry = await fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`);
+            const retry_all = await fetch(`http://127.0.0.1:8000/all_rates/${baseCurrency}`);
             const freshData = await retry.json();
-            setDisplayedRates(freshData);    
+            const freshData_all = await retry_all.json();
+            setDisplayedRates(freshData); 
+            setAllRates(freshData_all);   
           }
         } else {
           setDisplayedRates(data);
+          setAllRates(data_all);
         }
       } catch (error) {
         console.error(error);
@@ -148,8 +182,6 @@ export default function TabOneScreen() {
       .catch(err => console.error("Connection problem", err));
   }, []);
   */ 
-
-  // Calculating the data to show on the screen:
   
   const styles = StyleSheet.create({
     container: {

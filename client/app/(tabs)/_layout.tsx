@@ -44,7 +44,7 @@ export default function TabLayout() {
       shadowOpacity: 0.1,
       shadowRadius: 10,
       alignSelf: "center",
-      width: "80%",
+      width: "10%",
     },
   });
 

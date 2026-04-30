@@ -111,6 +111,7 @@ async def root():
 async def checkapi():
     return {"key found": bool(apikey), "prefix":apikey[:4] + "****" if apikey else "Not found"}
 
+0
 @app.get("/currencies")
 def get_currencies():
     with open("../server/avaliable_currencies.json", "r") as f:
@@ -139,7 +140,33 @@ async def getrate(base_currency: str, db: Session = Depends(get_db)):
 
     if not rates:
         raise HTTPException(status_code=404, detail=f"No rates found for {base_currency}")
+    return rates
 
+@app.get("/all_rates/{base_currency}")
+async def all_rates(base_currency: str, db: Session = Depends(get_db)):
+    
+    utc_now = datetime.now(timezone.utc)
+
+    exists_today = db.query(models.ExchangeRate.id).filter(
+        models.ExchangeRate.base_currency == base_currency,
+        models.ExchangeRate.created_at >= utc_now
+    ).first() is not None
+
+    if not exists_today:
+        try:
+            await fetch_and_save(base_currency, db=db);
+        except Exception as e:
+            print(f"API fetch failed: {e}")
+
+    rates = (
+        db.query(models.ExchangeRate)
+        .filter(models.ExchangeRate.base_currency == base_currency.upper())
+        .order_by(models.ExchangeRate.created_at.desc())
+        .all()
+    )
+    
+    if not rates:
+        raise HTTPException(status_code=404, detail=f"No rates found for {base_currency}")
     return rates
 
 @app.get("getrateviaapi/{base_currency}")
