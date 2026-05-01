@@ -95,19 +95,31 @@ export default function TabOneScreen() {
     if (allRates.length > 0) {
       const filteredData = allRates
         .filter(item => 
-          // Use optional chaining and trim to avoid crashes and mismatches
           item.base_currency?.trim().toUpperCase() === baseCurrency.trim().toUpperCase() && 
           item.target_currency?.trim().toUpperCase() === targetCurrency.trim().toUpperCase()
         )
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        .map((item) => ({
-          value: Number(item.rate),
-          // IMPORTANT: Use Time, not Date, so points don't stack on the same day
-          label: new Date(item.created_at).toLocaleTimeString([], { month: 'short', day: 'numeric' }),
-        }));
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-      setChartData(filteredData);
-      
+      // Fix: Only keep the last entry for each unique date to prevent stacking
+      const uniqueDates = [];
+      const seenDates = new Set();
+
+      for (let i = filteredData.length - 1; i >= 0; i--) {
+        const dateLabel = new Date(filteredData[i].created_at).toLocaleDateString([], { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        
+        if (!seenDates.has(dateLabel)) {
+          uniqueDates.push({
+            value: Number(filteredData[i].rate),
+            label: dateLabel, // Just the date, no time.
+          });
+          seenDates.add(dateLabel);
+        }
+      }
+
+      setChartData(uniqueDates.reverse().slice(-10)); // Shows last 10 unique days
     }
   }, [allRates, targetCurrency, baseCurrency]);
 
@@ -337,13 +349,14 @@ export default function TabOneScreen() {
             curved
             data={chartData}
 
-            yAxisOffset={minVal - 0.1} // Starts the Y-axis just below your lowest rate
+            yAxisOffset={minVal - 10} // Starts the Y-axis just below your lowest rate
+            yAxisLabelWidth={50}
             
             // SIZING - Adjust these to fill your plateau
             width={screenWidth / 2 - 140} 
             height={450}               // Increase this until it matches the left side
             adjustToWidth={true}       // Stretches the line to fill the width
-            initialSpacing={0}         // Removes the left-side gap
+            initialSpacing={10}         // Removes the left-side gap
             endSpacing={40}             // Removes the right-side gap
 
             //maxValue={1600}         // ~15% higher than the highest data point
@@ -360,16 +373,16 @@ export default function TabOneScreen() {
             xAxisThickness={0}
             
             // Make sure labels don't push the graph up
-            xAxisLabelTextStyle={{ color: 'gray', fontSize: 10, width: 60, textAlign: 'right' }}
+            xAxisLabelTextStyle={{ color: 'gray', fontSize: 10, width: 60, /*textAlign: 'right' */}}
             yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
 
-            rotateLabel
+            //rotateLabel
             startFillColor={colors.text}  
             endFillColor={colors.text}
             gradientDirection="vertical"
 
-            xAxisLabelsHeight={50}
-            xAxisLabelsVerticalShift={30} 
+            xAxisLabelsHeight={40}
+            xAxisLabelsVerticalShift={50} 
           />
         </View>
 
