@@ -208,6 +208,16 @@ export default function TabOneScreen() {
   const sidePadding = 20; 
   const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
 
+  const values = chartData.map(d => d.value);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min;
+  // If it's a flat line, range is 0. We use a 10% buffer of the value itself.
+  // If it's a moving line, we add 20% of the range as padding.
+  const buffer = range === 0 ? max * 0.1 : range * 0.2;
+  const chartMin = min - buffer;
+  const chartMax = (max + buffer) - chartMin; // This is the "height" of the chart
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -354,8 +364,8 @@ export default function TabOneScreen() {
         <View style={styles.rightColumn}>
           <LineChart
             data={chartData}
-            yAxisOffset={minVal - minVal*0.1} // Starts the Y-axis just below your lowest rate
-            maxValue={maxVal+maxVal*0.1}
+            yAxisOffset={chartMin} // Starts the Y-axis just below your lowest rate
+            maxValue={chartMax}
             height={450}               // Increase this until it matches the left side
             color={colors.text} 
             thickness={2}              // Thicker line looks better on large graphs
