@@ -194,6 +194,11 @@ export default function TabOneScreen() {
       flexDirection: 'row', 
       backgroundColor: colors.background,
     },
+    pickersContainer: {
+      marginBottom: 20,
+      flexDirection: "row",
+      gap: 10,
+    },
     leftColumn: {
       flex: 1,
       // THE PLATEAU EFFECT
@@ -232,6 +237,8 @@ export default function TabOneScreen() {
       backgroundColor: '#f0f0f0',
       borderRadius: 10,
       borderWidth: 0,
+      height: "100%",
+      flex: 1,
     },
     flatlist: {
       flex: 1,              // Let it take all remaining space in the left column
@@ -252,7 +259,8 @@ export default function TabOneScreen() {
       textAlign: 'center',
     },
     rateText: {
-      color: '#9b66a6',
+      //color: '#9b66a6',
+      color: '#595959',
       fontWeight: 'bold',
     },
     dateText: {
@@ -266,79 +274,98 @@ export default function TabOneScreen() {
     <View style={styles.container}>
       <View style={styles.rowContainer}>
 
-      {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
-      <View style={styles.leftColumn}>
-        <Picker
-          style={styles.picker} 
-          mode="dropdown"
-          selectedValue={baseCurrency} 
-          onValueChange={(itemValue) => setBaseCurrency(itemValue)}
-        >  
-          {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-            <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-          ))}
-        </Picker>
+        {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
+        <View style={styles.leftColumn}>
 
-        <FlatList
-          style={styles.flatlist}
-          data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
-          keyExtractor={(item) => item.id.toString()}
-          showsVerticalScrollIndicator={false} // THIS REMOVES THE SHARP CORNER LINE
-          contentContainerStyle={{ paddingBottom: 20 }} // Adds space at the bottom so last item isn't cut off
-          renderItem={({ item }) => (
-            <View style={styles.item}>
-              <Text style={styles.currencyText}>
-                <Text style={styles.rateText}> {item.rate} </Text> 
-                {item.target_currency}
-              </Text>
-              <Text style={styles.dateText}>
-                Updated: {new Date(item.created_at).toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-        />
-      </View>
+          <View style={styles.pickersContainer}>
 
-      {/* RIGHT SIDE: Graph (50%) */}
-      <View style={styles.rightColumn}>
-        <LineChart
-          areaChart
-          curved
-          data={chartData}
-          
-          // SIZING - Adjust these to fill your plateau
-          width={screenWidth / 2 - 140} 
-          height={450}               // Increase this until it matches the left side
-          adjustToWidth={true}       // Stretches the line to fill the width
-          initialSpacing={0}         // Removes the left-side gap
-          endSpacing={40}             // Removes the right-side gap
+            {/* PICKER FOR A BASE CURRENCY */}
+            <Picker
+              style={styles.picker} 
+              mode="dropdown"
+              selectedValue={baseCurrency} 
+              onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+            >  
+              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+              ))}
+            </Picker>
 
-          maxValue={1600}         // ~15% higher than the highest data point
-          noOfSections={6}        // Helps redistribute the Y-axis labels
-          //spacing={50}            // Increases horizontal space between points if needed
-          yAxisLabelContainerStyle={{marginBottom: 20}} 
-          
-          // STYLING
-          color={colors.tabBar || "#177AD5"} 
-          thickness={3}              // Thicker line looks better on large graphs
-          hideDataPoints
-          hideRules
-          yAxisThickness={0}
-          xAxisThickness={0}
-          
-          // Make sure labels don't push the graph up
-          xAxisLabelTextStyle={{ color: 'gray', fontSize: 10, width: 60, textAlign: 'right' }}
-          yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
+            {/* PICKER FOR A TARGET CURRENCY */}
+            <Picker
+              style={styles.picker} 
+              mode="dropdown"
+              selectedValue={baseCurrency} 
+              onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+            >  
+              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+              ))}
+            </Picker>
 
-          rotateLabel
-          startFillColor={colors.text}  
-          endFillColor={colors.text}
-          gradientDirection="vertical"
+          </View>
 
-          xAxisLabelsHeight={50}
-          xAxisLabelsVerticalShift={30} 
-        />
-      </View>
+          <FlatList
+            style={styles.flatlist}
+            data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
+            keyExtractor={(item) => item.id.toString()}
+            showsVerticalScrollIndicator={false} // THIS REMOVES THE SHARP CORNER LINE
+            contentContainerStyle={{ paddingBottom: 20 }} // Adds space at the bottom so last item isn't cut off
+            renderItem={({ item }) => (
+              <View style={styles.item}>
+                <Text style={styles.currencyText}>
+                  <Text style={styles.rateText}> {item.rate} </Text> 
+                  {item.target_currency}
+                </Text>
+                <Text style={styles.dateText}>
+                  Updated: {new Date(item.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+          />
+        </View>
+
+        {/* RIGHT SIDE: Graph (50%) */}
+        <View style={styles.rightColumn}>
+          <LineChart
+            areaChart
+            curved
+            data={chartData}
+            
+            // SIZING - Adjust these to fill your plateau
+            width={screenWidth / 2 - 140} 
+            height={450}               // Increase this until it matches the left side
+            adjustToWidth={true}       // Stretches the line to fill the width
+            initialSpacing={0}         // Removes the left-side gap
+            endSpacing={40}             // Removes the right-side gap
+
+            maxValue={1600}         // ~15% higher than the highest data point
+            noOfSections={6}        // Helps redistribute the Y-axis labels
+            //spacing={50}            // Increases horizontal space between points if needed
+            yAxisLabelContainerStyle={{marginBottom: 20}} 
+            
+            // STYLING
+            color={colors.tabBar || "#177AD5"} 
+            thickness={3}              // Thicker line looks better on large graphs
+            hideDataPoints
+            hideRules
+            yAxisThickness={0}
+            xAxisThickness={0}
+            
+            // Make sure labels don't push the graph up
+            xAxisLabelTextStyle={{ color: 'gray', fontSize: 10, width: 60, textAlign: 'right' }}
+            yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
+
+            rotateLabel
+            startFillColor={colors.text}  
+            endFillColor={colors.text}
+            gradientDirection="vertical"
+
+            xAxisLabelsHeight={50}
+            xAxisLabelsVerticalShift={30} 
+          />
+        </View>
+
       </View>
     </View>
   );
