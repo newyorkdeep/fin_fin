@@ -8,6 +8,7 @@ import { getTheme, saveTheme } from '../../themes_logic';
 import { DeviceEventEmitter } from 'react-native';
 import { LineChart } from "react-native-gifted-charts";
 import { Dimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 
 interface ExchangeRate {
   id: number;
@@ -41,6 +42,7 @@ export default function TabOneScreen() {
     { value: 40, label: 'Apr' },
   ];
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  const { width: windowWidth } = useWindowDimensions();
   
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -185,7 +187,9 @@ export default function TabOneScreen() {
     return <Text>Loading Currencies...</Text>;
   }
 
-  const screenWidth = Dimensions.get('window').width;
+  //const screenWidth = Dimensions.get('window').width;
+  
+  const chartWidth = windowWidth / 2 - 200;
 
   /* this was used before to show the welcome message from the servers main endpoint
   useEffect(() => {
@@ -198,8 +202,12 @@ export default function TabOneScreen() {
   }, []);
   */ 
 
+  // Some helpful calculations to make the graph look good and align
   const minVal = chartData.length > 0 ? Math.min(...chartData.map(d => d.value)) : 0;
-  
+  const maxVal = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
+  const sidePadding = 20; 
+  const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -345,47 +353,23 @@ export default function TabOneScreen() {
         {/* RIGHT SIDE: Graph (50%) */}
         <View style={styles.rightColumn}>
           <LineChart
-            areaChart
-            curved
             data={chartData}
-
-            yAxisOffset={minVal - 10} // Starts the Y-axis just below your lowest rate
-            yAxisLabelWidth={50}
-            
-            // SIZING - Adjust these to fill your plateau
-            width={screenWidth / 2 - 140} 
+            yAxisOffset={minVal - minVal*0.1} // Starts the Y-axis just below your lowest rate
+            maxValue={maxVal+maxVal*0.1}
             height={450}               // Increase this until it matches the left side
-            adjustToWidth={true}       // Stretches the line to fill the width
-            initialSpacing={10}         // Removes the left-side gap
-            endSpacing={40}             // Removes the right-side gap
-
-            //maxValue={1600}         // ~15% higher than the highest data point
-            noOfSections={6}        // Helps redistribute the Y-axis labels
-            spacing={150}            // Increases horizontal space between points if needed
-            yAxisLabelContainerStyle={{marginBottom: 20}} 
-            
-            // STYLING
-            color={colors.tabBar || "#177AD5"} 
-            thickness={3}              // Thicker line looks better on large graphs
-            hideDataPoints
-            hideRules
+            color={colors.text} 
+            thickness={2}              // Thicker line looks better on large graphs
             yAxisThickness={0}
             xAxisThickness={0}
-            
-            // Make sure labels don't push the graph up
-            xAxisLabelTextStyle={{ color: 'gray', fontSize: 10, width: 60, /*textAlign: 'right' */}}
-            yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
-
-            //rotateLabel
-            startFillColor={colors.text}  
-            endFillColor={colors.text}
-            gradientDirection="vertical"
-
-            xAxisLabelsHeight={40}
-            xAxisLabelsVerticalShift={50} 
+            yAxisLabelWidth={75} // Give it a generous fixed width
+            formatYLabel={(label) => parseFloat(label).toFixed(2)}
+            yAxisLabelContainerStyle={{justifyContent: 'center'}}
+            adjustToWidth
+            width={calculatedWidth}
+            initialSpacing={sidePadding} 
+            endSpacing={sidePadding} 
           />
         </View>
-
       </View>
     </View>
   );
