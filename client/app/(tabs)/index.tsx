@@ -66,47 +66,50 @@ export default function TabOneScreen() {
 
     return () => subscription.remove();
   }, []);
-  
-  /* OLD USEEFFECT THAT WAS SHOWING NONSENSE AND WAS USED AS A PLACEHOLDER
-  useEffect(() => {
-    if (displayedRates.length > 0) {
-      const formattedData: ChartPoint[] = displayedRates
-        .slice(0, 10)
-        .map((item) => ({
-          value: Number(item.rate), // Ensure it's a number
-          label: item.target_currency,
-          dataPointText: item.rate.toString(),
-        }));
+
+  /*useEffect(() => {
+    if (allRates.length > 0) {
+      // 1. FILTER: Pick one currency, otherwise the chart is nonsensical
+      // You can replace 'ZAR' with a state variable like selectedCurrency
+      const currencyHistory = allRates.filter(item => item.target_currency === 'ZAR');
+
+      // 2. MAP: Convert your JSON keys to 'value' and 'label'
+      const formattedData: ChartPoint[] = currencyHistory.map((item) => ({
+        value: Number(item.rate),
+        // Format the date: "May 01"
+        label: new Date(item.created_at).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        dataPointText: item.rate.toString(),
+      }));
+
+      // 3. SORT: Ensure the line goes from oldest to newest
+      formattedData.sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
 
       setChartData(formattedData);
     }
-  }, [displayedRates]);
-  */
+  }, [allRates, targetCurrency]); // Runs whenever data or chosen currency changes*/
 
   useEffect(() => {
     if (allRates.length > 0) {
-      const formattedData: ChartPoint[] = allRates
-        // 1. Only grab rates where base is USD and target is AED
+      const filteredData = allRates
         .filter(item => 
-          item.base_currency.trim().toUpperCase() === "USD" && 
-          item.target_currency.trim().toUpperCase() === "AED"
+          // Use optional chaining and trim to avoid crashes and mismatches
+          item.base_currency?.trim().toUpperCase() === baseCurrency.trim().toUpperCase() && 
+          item.target_currency?.trim().toUpperCase() === targetCurrency.trim().toUpperCase()
         )
-        // 2. Chronological order (oldest to newest)
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        // 3. Map to your ChartPoint interface
         .map((item) => ({
           value: Number(item.rate),
-          // Shows time like "10:30 AM" for the x-axis
-          label: new Date(item.created_at).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          dataPointText: item.rate.toFixed(2), // Rounds to 2 decimals for cleaner display
+          // IMPORTANT: Use Time, not Date, so points don't stack on the same day
+          label: new Date(item.created_at).toLocaleTimeString([], { month: 'short', day: 'numeric' }),
         }));
 
-      setChartData(formattedData);
+      setChartData(filteredData);
+      
     }
-  }, [allRates]); // targetCurrency is gone from here since it's hardcoded
+  }, [allRates, targetCurrency, baseCurrency]);
 
   const handleThemeChange = async (itemValue: keyof typeof Themes) => {
     setSelectedTheme(itemValue); // Changes the colors NOW
@@ -182,6 +185,8 @@ export default function TabOneScreen() {
       .catch(err => console.error("Connection problem", err));
   }, []);
   */ 
+
+  const minVal = chartData.length > 0 ? Math.min(...chartData.map(d => d.value)) : 0;
   
   const styles = StyleSheet.create({
     container: {
@@ -295,8 +300,8 @@ export default function TabOneScreen() {
             <Picker
               style={styles.picker} 
               mode="dropdown"
-              selectedValue={baseCurrency} 
-              onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+              selectedValue={targetCurrency} 
+              onValueChange={(itemValue) => setTargetCurrency(itemValue)}
             >  
               {currencyData?.currencies?.map(([code, name]: [string, string]) => (
                 <Picker.Item key={code} label={`${code} ${name}`} value={code} />
@@ -331,6 +336,8 @@ export default function TabOneScreen() {
             areaChart
             curved
             data={chartData}
+
+            yAxisOffset={minVal - 0.1} // Starts the Y-axis just below your lowest rate
             
             // SIZING - Adjust these to fill your plateau
             width={screenWidth / 2 - 140} 
@@ -339,9 +346,9 @@ export default function TabOneScreen() {
             initialSpacing={0}         // Removes the left-side gap
             endSpacing={40}             // Removes the right-side gap
 
-            maxValue={1600}         // ~15% higher than the highest data point
+            //maxValue={1600}         // ~15% higher than the highest data point
             noOfSections={6}        // Helps redistribute the Y-axis labels
-            //spacing={50}            // Increases horizontal space between points if needed
+            spacing={150}            // Increases horizontal space between points if needed
             yAxisLabelContainerStyle={{marginBottom: 20}} 
             
             // STYLING
