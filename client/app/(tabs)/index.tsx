@@ -337,7 +337,6 @@ export default function TabOneScreen() {
                 <Picker.Item key={code} label={`${code} ${name}`} value={code} />
               ))}
             </Picker>
-
           </View>
 
           <FlatList
@@ -367,7 +366,7 @@ export default function TabOneScreen() {
             yAxisOffset={chartMin} // Starts the Y-axis just below your lowest rate
             maxValue={chartMax}
             height={450}               // Increase this until it matches the left side
-            color={colors.text} 
+            color={'#161616'} 
             thickness={2}              // Thicker line looks better on large graphs
             yAxisThickness={0}
             xAxisThickness={0}
