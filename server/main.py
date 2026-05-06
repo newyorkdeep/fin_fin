@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import requests
@@ -9,7 +10,7 @@ from . import models
 from sqlalchemy.orm import Session
 from .models import ExchangeRate
 from .database import SessionLocal
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from decimal import Decimal
 from sqlalchemy import func, and_
@@ -18,6 +19,7 @@ from contextlib import asynccontextmanager
 import logging
 from pydantic import BaseModel
 from typing import List
+
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(ENV_PATH)
@@ -31,6 +33,7 @@ logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 FILE_PATH = "../server/avaliable_currencies.json"
+
 
 async def fetch_supported_codes():
     if not apikey:
@@ -56,6 +59,26 @@ async def fetch_supported_codes():
         except Exception as e: 
             print(f"❌ Network Error: {e}")
 
+def scheduled_currency_update():
+    db = SessionLocal()
+    try:
+        most_valuable = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "BYN"]
+        for item in most_valuable:
+            try:
+                if not check_rate_exists(db, item):
+                    # Since this is a background thread, we use asyncio to run the async fetch
+                    import asyncio
+                    print(f'Fetching stale or missing rate for: {item}')
+                    asyncio.run(fetch_and_save(item, db))
+                else: 
+                    print(f'Rate for {item} is up to date.')
+            except Exception as e:
+                print(f'Failed to update {item}: {e}. Keeping old data.')
+    except Exception as e:
+        print(f'Something went wrong: {e}')
+    finally:
+        db.close()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. CREATE TABLES FIRST
@@ -69,9 +92,16 @@ async def lifespan(app: FastAPI):
         await fetch_supported_codes()
     else: 
         print('💾 avaliable_currencies.json found. Skipping API call.')
+
+    #3. Fetch the most important rates
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(scheduled_currency_update, 'interval', hours=24)
+    scheduler.start()
+    scheduled_currency_update()
     
     yield
     # Shutdown logic goes here if needed
+    scheduler.shutdown()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -116,6 +146,15 @@ def get_currencies():
     with open("../server/avaliable_currencies.json", "r") as f:
         return json.load(f)
 
+def check_rate_exists(db: Session, base_currency: str):
+    twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+    return db.query(models.ExchangeRate.id).filter(
+        models.ExchangeRate.base_currency == base_currency,
+        models.ExchangeRate.created_at >= twenty_four_hours_ago
+    ).first() is not None
+
+
+# This function returns the latest rates for a specific currency
 @app.get("/rates/{base_currency}")
 async def getrate(base_currency: str, db: Session = Depends(get_db)):
     
@@ -139,8 +178,37 @@ async def getrate(base_currency: str, db: Session = Depends(get_db)):
 
     if not rates:
         raise HTTPException(status_code=404, detail=f"No rates found for {base_currency}")
-
     return rates
+
+
+# Like the previous one but does not filter out rates from the past
+@app.get("/all_rates/{base_currency}")
+async def all_rates(base_currency: str, db: Session = Depends(get_db)):
+    
+    utc_now = datetime.now(timezone.utc)
+
+    exists_today = db.query(models.ExchangeRate.id).filter(
+        models.ExchangeRate.base_currency == base_currency,
+        models.ExchangeRate.created_at >= utc_now
+    ).first() is not None
+
+    if not exists_today:
+        try:
+            await fetch_and_save(base_currency, db=db);
+        except Exception as e:
+            print(f"API fetch failed: {e}")
+
+    rates = (
+        db.query(models.ExchangeRate)
+        .filter(models.ExchangeRate.base_currency == base_currency.upper())
+        .order_by(models.ExchangeRate.created_at.desc())
+        .all()
+    )
+    
+    if not rates:
+        raise HTTPException(status_code=404, detail=f"No rates found for {base_currency}")
+    return rates
+
 
 @app.get("getrateviaapi/{base_currency}")
 async def getrateviaapi(base_currency: str):

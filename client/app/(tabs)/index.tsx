@@ -8,6 +8,7 @@ import { getTheme, saveTheme } from '../../themes_logic';
 import { DeviceEventEmitter } from 'react-native';
 import { LineChart } from "react-native-gifted-charts";
 import { Dimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 
 interface ExchangeRate {
   id: number;
@@ -29,6 +30,7 @@ export default function TabOneScreen() {
   const [targetCurrency, setTargetCurrency] = useState('USD');
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
+  const [allRates, setAllRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
   //const currencyData = require('../../avaliable_currencies.json');
   const [currencyData, setCurrencyData] = useState<any>(null);
@@ -40,6 +42,7 @@ export default function TabOneScreen() {
     { value: 40, label: 'Apr' },
   ];
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  const { width: windowWidth } = useWindowDimensions();
   
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -66,19 +69,61 @@ export default function TabOneScreen() {
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
-    if (displayedRates.length > 0) {
-      const formattedData: ChartPoint[] = displayedRates
-        .slice(0, 10)
-        .map((item) => ({
-          value: Number(item.rate), // Ensure it's a number
-          label: item.target_currency,
-          dataPointText: item.rate.toString(),
-        }));
+  /*useEffect(() => {
+    if (allRates.length > 0) {
+      // 1. FILTER: Pick one currency, otherwise the chart is nonsensical
+      // You can replace 'ZAR' with a state variable like selectedCurrency
+      const currencyHistory = allRates.filter(item => item.target_currency === 'ZAR');
+
+      // 2. MAP: Convert your JSON keys to 'value' and 'label'
+      const formattedData: ChartPoint[] = currencyHistory.map((item) => ({
+        value: Number(item.rate),
+        // Format the date: "May 01"
+        label: new Date(item.created_at).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        dataPointText: item.rate.toString(),
+      }));
+
+      // 3. SORT: Ensure the line goes from oldest to newest
+      formattedData.sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
 
       setChartData(formattedData);
     }
-  }, [displayedRates]);
+  }, [allRates, targetCurrency]); // Runs whenever data or chosen currency changes*/
+
+  useEffect(() => {
+    if (allRates.length > 0) {
+      const filteredData = allRates
+        .filter(item => 
+          item.base_currency?.trim().toUpperCase() === baseCurrency.trim().toUpperCase() && 
+          item.target_currency?.trim().toUpperCase() === targetCurrency.trim().toUpperCase()
+        )
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      // Fix: Only keep the last entry for each unique date to prevent stacking
+      const uniqueDates = [];
+      const seenDates = new Set();
+
+      for (let i = filteredData.length - 1; i >= 0; i--) {
+        const dateLabel = new Date(filteredData[i].created_at).toLocaleDateString([], { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        
+        if (!seenDates.has(dateLabel)) {
+          uniqueDates.push({
+            value: Number(filteredData[i].rate),
+            label: dateLabel, // Just the date, no time.
+          });
+          seenDates.add(dateLabel);
+        }
+      }
+
+      setChartData(uniqueDates.reverse().slice(-10)); // Shows last 10 unique days
+    }
+  }, [allRates, targetCurrency, baseCurrency]);
 
   const handleThemeChange = async (itemValue: keyof typeof Themes) => {
     setSelectedTheme(itemValue); // Changes the colors NOW
@@ -95,7 +140,9 @@ export default function TabOneScreen() {
 
       try {
         const response = await fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`);
+        const response_all = await fetch(`http://127.0.0.1:8000/all_rates/${baseCurrency}`);
         const data = await response.json();
+        const data_all = await response_all.json();
 
         if (response.status === 404 || !data || data.length === 0) {
           console.log('Empty or not found. Syncing with external API...');
@@ -103,11 +150,15 @@ export default function TabOneScreen() {
 
           if (syncResponse.ok) {
             const retry = await fetch(`http://127.0.0.1:8000/rates/${baseCurrency}`);
+            const retry_all = await fetch(`http://127.0.0.1:8000/all_rates/${baseCurrency}`);
             const freshData = await retry.json();
-            setDisplayedRates(freshData);    
+            const freshData_all = await retry_all.json();
+            setDisplayedRates(freshData); 
+            setAllRates(freshData_all);   
           }
         } else {
           setDisplayedRates(data);
+          setAllRates(data_all);
         }
       } catch (error) {
         console.error(error);
@@ -136,7 +187,9 @@ export default function TabOneScreen() {
     return <Text>Loading Currencies...</Text>;
   }
 
-  const screenWidth = Dimensions.get('window').width;
+  //const screenWidth = Dimensions.get('window').width;
+  
+  const chartWidth = windowWidth / 2 - 200;
 
   /* this was used before to show the welcome message from the servers main endpoint
   useEffect(() => {
@@ -149,18 +202,36 @@ export default function TabOneScreen() {
   }, []);
   */ 
 
-  // Calculating the data to show on the screen:
+  // Some helpful calculations to make the graph look good and align
   
+  const sidePadding = 20; 
+  const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
+
+  const values = chartData.map(d => d.value);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min;
+  // If it's a flat line, range is 0. We use a 10% buffer of the value itself.
+  // If it's a moving line, we add 20% of the range as padding.
+  const buffer = range === 0 ? max * 0.1 : range * 0.2;
+  const chartMin = min - buffer;
+  const chartMax = (max + buffer) - chartMin; // This is the "height" of the chart
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#f5f5f7', // Light gray background to make platforms stand out
+      backgroundColor: colors.background,
       padding: 50,                  // Global padding so they don't touch screen edges
     },
     rowContainer: {
       flex: 1,
       flexDirection: 'row', 
-      backgroundColor: '#f5f5f7',
+      backgroundColor: colors.background,
+    },
+    pickersContainer: {
+      marginBottom: 20,
+      flexDirection: "row",
+      gap: 10,
     },
     leftColumn: {
       flex: 1,
@@ -200,6 +271,8 @@ export default function TabOneScreen() {
       backgroundColor: '#f0f0f0',
       borderRadius: 10,
       borderWidth: 0,
+      height: "100%",
+      flex: 1,
     },
     flatlist: {
       flex: 1,              // Let it take all remaining space in the left column
@@ -220,7 +293,8 @@ export default function TabOneScreen() {
       textAlign: 'center',
     },
     rateText: {
-      color: '#9b66a6',
+      //color: '#9b66a6',
+      color: '#595959',
       fontWeight: 'bold',
     },
     dateText: {
@@ -234,76 +308,76 @@ export default function TabOneScreen() {
     <View style={styles.container}>
       <View style={styles.rowContainer}>
 
-      {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
-      <View style={styles.leftColumn}>
-        <Picker
-          style={styles.picker} 
-          mode="dropdown"
-          selectedValue={baseCurrency} 
-          onValueChange={(itemValue) => setBaseCurrency(itemValue)}
-        >  
-          {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-            <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-          ))}
-        </Picker>
+        {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
+        <View style={styles.leftColumn}>
 
-        <FlatList
-          style={styles.flatlist}
-          data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
-          keyExtractor={(item) => item.id.toString()}
-          showsVerticalScrollIndicator={false} // THIS REMOVES THE SHARP CORNER LINE
-          contentContainerStyle={{ paddingBottom: 20 }} // Adds space at the bottom so last item isn't cut off
-          renderItem={({ item }) => (
-            <View style={styles.item}>
-              <Text style={styles.currencyText}>
-                <Text style={styles.rateText}> {item.rate} </Text> 
-                {item.target_currency}
-              </Text>
-              <Text style={styles.dateText}>
-                Updated: {new Date(item.created_at).toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-        />
-      </View>
+          <View style={styles.pickersContainer}>
 
-      {/* RIGHT SIDE: Graph (50%) */}
-      <View style={styles.rightColumn}>
-        <LineChart
-          areaChart
-          curved
-          data={chartData}
-          
-          // SIZING - Adjust these to fill your plateau
-          width={screenWidth / 2 - 50} 
-          height={450}               // Increase this until it matches the left side
-          adjustToWidth={true}       // Stretches the line to fill the width
-          initialSpacing={0}         // Removes the left-side gap
-          endSpacing={0}             // Removes the right-side gap
+            {/* PICKER FOR A BASE CURRENCY */}
+            <Picker
+              style={styles.picker} 
+              mode="dropdown"
+              selectedValue={baseCurrency} 
+              onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+            >  
+              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+              ))}
+            </Picker>
 
-          maxValue={1600}         // ~15% higher than the highest data point
-          noOfSections={6}        // Helps redistribute the Y-axis labels
-          spacing={50}            // Increases horizontal space between points if needed
-          yAxisLabelContainerStyle={{marginBottom: 20}} 
-          
-          // STYLING
-          color={colors.tabBar || "#177AD5"} 
-          thickness={3}              // Thicker line looks better on large graphs
-          hideDataPoints
-          hideRules
-          yAxisThickness={0}
-          xAxisThickness={0}
-          
-          // Make sure labels don't push the graph up
-          xAxisLabelTextStyle={{ color: 'gray', fontSize: 10 }}
-          yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
+            {/* PICKER FOR A TARGET CURRENCY */}
+            <Picker
+              style={styles.picker} 
+              mode="dropdown"
+              selectedValue={targetCurrency} 
+              onValueChange={(itemValue) => setTargetCurrency(itemValue)}
+            >  
+              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+              ))}
+            </Picker>
+          </View>
 
-          rotateLabel
-          startFillColor={colors.text}  
-          endFillColor={colors.text}
-          gradientDirection="vertical"
-        />
-      </View>
+          <FlatList
+            style={styles.flatlist}
+            data={displayedRates.filter(item => item.base_currency !== item.target_currency)}
+            keyExtractor={(item) => item.id.toString()}
+            showsVerticalScrollIndicator={false} // THIS REMOVES THE SHARP CORNER LINE
+            contentContainerStyle={{ paddingBottom: 20 }} // Adds space at the bottom so last item isn't cut off
+            renderItem={({ item }) => (
+              <View style={styles.item}>
+                <Text style={styles.currencyText}>
+                  <Text style={styles.rateText}> {item.rate} </Text> 
+                  {item.target_currency}
+                </Text>
+                <Text style={styles.dateText}>
+                  Updated: {new Date(item.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+          />
+        </View>
+
+        {/* RIGHT SIDE: Graph (50%) */}
+        <View style={styles.rightColumn}>
+          <LineChart
+            data={chartData}
+            yAxisOffset={chartMin} // Starts the Y-axis just below your lowest rate
+            maxValue={chartMax}
+            height={450}               // Increase this until it matches the left side
+            color={'#161616'} 
+            thickness={2}              // Thicker line looks better on large graphs
+            yAxisThickness={0}
+            xAxisThickness={0}
+            yAxisLabelWidth={75} // Give it a generous fixed width
+            formatYLabel={(label) => parseFloat(label).toFixed(2)}
+            yAxisLabelContainerStyle={{justifyContent: 'center'}}
+            adjustToWidth
+            width={calculatedWidth}
+            initialSpacing={sidePadding} 
+            endSpacing={sidePadding} 
+          />
+        </View>
       </View>
     </View>
   );
