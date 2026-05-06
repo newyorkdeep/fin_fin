@@ -203,8 +203,7 @@ export default function TabOneScreen() {
   */ 
 
   // Some helpful calculations to make the graph look good and align
-  const minVal = chartData.length > 0 ? Math.min(...chartData.map(d => d.value)) : 0;
-  const maxVal = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
+  
   const sidePadding = 20; 
   const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
 
