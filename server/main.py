@@ -1,9 +1,10 @@
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
-from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import requests
 import os
+import asyncio
 from dotenv import load_dotenv
 from .database import engine
 from . import models
@@ -59,7 +60,7 @@ async def fetch_supported_codes():
         except Exception as e: 
             print(f"❌ Network Error: {e}")
 
-def scheduled_currency_update():
+async def scheduled_currency_update():
     db = SessionLocal()
     try:
         most_valuable = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "BYN"]
@@ -69,7 +70,7 @@ def scheduled_currency_update():
                     # Since this is a background thread, we use asyncio to run the async fetch
                     import asyncio
                     print(f'Fetching stale or missing rate for: {item}')
-                    asyncio.run(fetch_and_save(item, db))
+                    await fetch_and_save(item, db)
                 else: 
                     print(f'Rate for {item} is up to date.')
             except Exception as e:
@@ -94,10 +95,14 @@ async def lifespan(app: FastAPI):
         print('💾 avaliable_currencies.json found. Skipping API call.')
 
     #3. Fetch the most important rates
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_currency_update, 'interval', hours=24)
+    scheduler = AsyncIOScheduler()
+    # Note: BackgroundScheduler works with sync functions. 
+    # If you keep it, use a lambda to wrap the async call:
+    scheduler.add_job(lambda: asyncio.run(scheduled_currency_update()), 'interval', hours=24)
     scheduler.start()
-    scheduled_currency_update()
+
+    # The "Better" way to run it immediately without crashing:
+    asyncio.create_task(scheduled_currency_update())
     
     yield
     # Shutdown logic goes here if needed
