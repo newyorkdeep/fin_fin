@@ -32,18 +32,13 @@ export default function TabOneScreen() {
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
   const [allRates, setAllRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
-  //const currencyData = require('../../avaliable_currencies.json');
-  const [currencyData, setCurrencyData] = useState<any>(null);
+  const [currencyData, setCurrencyData] = useState<any>(null); //avaliable currencies
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
-  const data = [
-    { value: 15, label: 'Jan' },
-    { value: 30, label: 'Feb' },
-    { value: 26, label: 'Mar' },
-    { value: 40, label: 'Apr' },
-  ];
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const { width: windowWidth } = useWindowDimensions();
+  const colors = Themes[selectedTheme];
   
+  // avaliable currencies
   useEffect(() => {
     const fetchCurrencies = async () => {
       try {
@@ -58,6 +53,7 @@ export default function TabOneScreen() {
     fetchCurrencies();
   }, []);
 
+  // syncs theme on initial load and listens for real-time theme updates
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
       setSelectedTheme(newTheme);
@@ -69,30 +65,7 @@ export default function TabOneScreen() {
     return () => subscription.remove();
   }, []);
 
-  /*useEffect(() => {
-    if (allRates.length > 0) {
-      // 1. FILTER: Pick one currency, otherwise the chart is nonsensical
-      // You can replace 'ZAR' with a state variable like selectedCurrency
-      const currencyHistory = allRates.filter(item => item.target_currency === 'ZAR');
-
-      // 2. MAP: Convert your JSON keys to 'value' and 'label'
-      const formattedData: ChartPoint[] = currencyHistory.map((item) => ({
-        value: Number(item.rate),
-        // Format the date: "May 01"
-        label: new Date(item.created_at).toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        dataPointText: item.rate.toString(),
-      }));
-
-      // 3. SORT: Ensure the line goes from oldest to newest
-      formattedData.sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
-
-      setChartData(formattedData);
-    }
-  }, [allRates, targetCurrency]); // Runs whenever data or chosen currency changes*/
-
+  // filters, deduplicates, and formats the last 10 historical rates for the chart
   useEffect(() => {
     if (allRates.length > 0) {
       const filteredData = allRates
@@ -125,14 +98,7 @@ export default function TabOneScreen() {
     }
   }, [allRates, targetCurrency, baseCurrency]);
 
-  const handleThemeChange = async (itemValue: keyof typeof Themes) => {
-    setSelectedTheme(itemValue); // Changes the colors NOW
-    await saveTheme(itemValue);  // Saves to AsyncStorage for NEXT TIME
-    DeviceEventEmitter.emit('themeChanged', itemValue); // Broadcasting the new theme to all the screens and tabs 
-  };
-
-  const colors = Themes[selectedTheme];
-
+  // fetches local rates on base currency change, falling back to an API sync if empty.
   useEffect(() => {
     const getRates = async () => {
       console.log("⚠️FETCH STARTING FOR:", baseCurrency);
@@ -170,6 +136,7 @@ export default function TabOneScreen() {
     if (baseCurrency) getRates();
   }, [baseCurrency]);
 
+  // indicator for loading
   if (loadingRates) {
     return (
       <View style={{
@@ -183,37 +150,18 @@ export default function TabOneScreen() {
     );
   }
 
+  // i feel like its an old indicator for loading
   if (!currencyData) {
     return <Text>Loading Currencies...</Text>;
   }
-
-  //const screenWidth = Dimensions.get('window').width;
-  
-  const chartWidth = windowWidth / 2 - 200;
-
-  /* this was used before to show the welcome message from the servers main endpoint
-  useEffect(() => {
-    const API_URL = "http://127.0.0.1:8000";
-
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => setMessage(data.message))
-      .catch(err => console.error("Connection problem", err));
-  }, []);
-  */ 
-
-  // Some helpful calculations to make the graph look good and align
   
   const sidePadding = 20; 
   const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
-
   const values = chartData.map(d => d.value);
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min;
-  // If it's a flat line, range is 0. We use a 10% buffer of the value itself.
-  // If it's a moving line, we add 20% of the range as padding.
-  const buffer = range === 0 ? max * 0.1 : range * 0.2;
+  const buffer = range === 0 ? max * 0.1 : range * 0.2; // If it's a flat line, range is 0. We use a 10% buffer of the value itself. If it's a moving line, we add 20% of the range as padding.
   const chartMin = min - buffer;
   const chartMax = (max + buffer) - chartMin; // This is the "height" of the chart
 
