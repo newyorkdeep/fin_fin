@@ -311,31 +311,37 @@ export default function TabOneScreen() {
         {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
         <View style={styles.leftColumn}>
 
-          <View style={styles.pickersContainer}>
+          <View style={[styles.pickersContainer, {alignSelf: 'stretch'}]}>
 
             {/* PICKER FOR A BASE CURRENCY */}
-            <Picker
-              style={styles.picker} 
-              mode="dropdown"
-              selectedValue={baseCurrency} 
-              onValueChange={(itemValue) => setBaseCurrency(itemValue)}
-            >  
-              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-              ))}
-            </Picker>
+            <View style={{flexDirection: 'column', gap: 3, flex: 1, minWidth: 0}}>
+              <Text style={{flex: 0.1}}>Base currency:</Text>
+              <Picker
+                style={[styles.picker, {padding: 5}]}
+                mode="dropdown"
+                selectedValue={baseCurrency} 
+                onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+              >  
+                {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                  <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+                ))}
+              </Picker>
+            </View>
 
             {/* PICKER FOR A TARGET CURRENCY */}
-            <Picker
-              style={styles.picker} 
-              mode="dropdown"
-              selectedValue={targetCurrency} 
-              onValueChange={(itemValue) => setTargetCurrency(itemValue)}
-            >  
-              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-              ))}
-            </Picker>
+            <View style={{flexDirection: 'column', gap: 3, flex: 1, minWidth: 0}}>
+              <Text style={{flex: 0.1}}>Target currency:</Text>
+              <Picker
+                style={[styles.picker, {padding: 5}]}
+                mode="dropdown"
+                selectedValue={targetCurrency} 
+                onValueChange={(itemValue) => setTargetCurrency(itemValue)}
+              >  
+                {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                  <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+                ))}
+              </Picker>
+            </View>
           </View>
 
           <FlatList
