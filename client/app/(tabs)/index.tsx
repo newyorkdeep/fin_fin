@@ -32,7 +32,7 @@ export default function TabOneScreen() {
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
   const [allRates, setAllRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
-  const [currencyData, setCurrencyData] = useState<any>(null); //avaliable currencies
+  const [avaliableCurrencies, setAvaliableCurrencies] = useState<any>(null);
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const { width: windowWidth } = useWindowDimensions();
@@ -45,7 +45,7 @@ export default function TabOneScreen() {
         // Use your computer's IP address instead of localhost!
         const response = await fetch("http://localhost:8000/currencies"); 
         const json = await response.json();
-        setCurrencyData(json);
+        setAvaliableCurrencies(json);
       } catch (error) {
         console.error("Failed to fetch currencies:", error);
       }
@@ -151,7 +151,7 @@ export default function TabOneScreen() {
   }
 
   // i feel like its an old indicator for loading
-  if (!currencyData) {
+  if (!avaliableCurrencies) {
     return <Text>Loading Currencies...</Text>;
   }
   
@@ -270,7 +270,7 @@ export default function TabOneScreen() {
                 selectedValue={baseCurrency} 
                 onValueChange={(itemValue) => setBaseCurrency(itemValue)}
               >  
-                {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                {avaliableCurrencies?.currencies?.map(([code, name]: [string, string]) => (
                   <Picker.Item key={code} label={`${code} ${name}`} value={code} />
                 ))}
               </Picker>
@@ -285,7 +285,7 @@ export default function TabOneScreen() {
                 selectedValue={targetCurrency} 
                 onValueChange={(itemValue) => setTargetCurrency(itemValue)}
               >  
-                {currencyData?.currencies?.map(([code, name]: [string, string]) => (
+                {avaliableCurrencies?.currencies?.map(([code, name]: [string, string]) => (
                   <Picker.Item key={code} label={`${code} ${name}`} value={code} />
                 ))}
               </Picker>
@@ -324,7 +324,7 @@ export default function TabOneScreen() {
             yAxisThickness={0}
             xAxisThickness={0}
             yAxisLabelWidth={75} // Give it a generous fixed width
-            formatYLabel={(label) => parseFloat(label).toFixed(2)}
+            formatYLabel={(label) => parseFloat(label).toFixed(3)}
             yAxisLabelContainerStyle={{justifyContent: 'center'}}
             adjustToWidth
             width={calculatedWidth}
