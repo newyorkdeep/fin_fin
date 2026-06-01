@@ -75,7 +75,6 @@ export default function TabOneScreen() {
         )
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-      // Fix: Only keep the last entry for each unique date to prevent stacking
       const uniqueDates = [];
       const seenDates = new Set();
 
@@ -88,13 +87,24 @@ export default function TabOneScreen() {
         if (!seenDates.has(dateLabel)) {
           uniqueDates.push({
             value: Number(filteredData[i].rate),
-            label: dateLabel, // Just the date, no time.
+            label: dateLabel, 
           });
           seenDates.add(dateLabel);
         }
       }
 
-      setChartData(uniqueDates.reverse().slice(-10)); // Shows last 10 unique days
+      // 1. Process your reversed and sliced array first
+      const finalData = uniqueDates.reverse().slice(-10);
+
+      // 2. 👇 Append invisible padding strictly to the absolute last element
+      if (finalData.length > 1) {
+        finalData[0].label = `\u00A0\u00A0\u00A0${finalData[0].label}`;
+        const lastIndex = finalData.length - 1;
+        finalData[lastIndex].label = `${finalData[lastIndex].label}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0`;
+      }
+
+      // 3. Set the state with your modified array
+      setChartData(finalData); 
     }
   }, [allRates, targetCurrency, baseCurrency]);
 
@@ -202,7 +212,7 @@ export default function TabOneScreen() {
       backgroundColor: '#fff',
       borderRadius: 30,
       marginLeft: 25,            // Gap between the two platforms
-      padding: 15,
+      padding: 25,
       justifyContent: 'center',
       alignItems: 'center',
       // Subtle Shadow
@@ -211,7 +221,7 @@ export default function TabOneScreen() {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
-      overflow: 'hidden', // IMPORTANT: This clips children (like FlatList) to the rounded corners
+      overflow: 'visible',
     },
     picker: {
       width: '100%',        // Fill the left half
@@ -252,6 +262,7 @@ export default function TabOneScreen() {
     },
   });
 
+  console.log(chartData);
   return (
     <View style={styles.container}>
       <View style={styles.rowContainer}>
@@ -316,20 +327,27 @@ export default function TabOneScreen() {
         <View style={styles.rightColumn}>
           <LineChart
             data={chartData}
-            yAxisOffset={chartMin} // Starts the Y-axis just below your lowest rate
+            yAxisOffset={chartMin} 
             maxValue={chartMax}
-            height={450}               // Increase this until it matches the left side
+            height={450}               
             color={'#161616'} 
-            thickness={2}              // Thicker line looks better on large graphs
+            thickness={2}              
             yAxisThickness={0}
             xAxisThickness={0}
-            yAxisLabelWidth={75} // Give it a generous fixed width
+            yAxisLabelWidth={75} 
             formatYLabel={(label) => parseFloat(label).toFixed(3)}
             yAxisLabelContainerStyle={{justifyContent: 'center'}}
             adjustToWidth
             width={calculatedWidth}
             initialSpacing={sidePadding} 
             endSpacing={sidePadding} 
+            
+            // Forces the text box to maintain strict single-line structure
+            xAxisTextNumberOfLines={1}    
+            xAxisLabelTextStyle={{
+              textAlign: 'center',
+              color: '#000',
+            }}
           />
         </View>
       </View>
