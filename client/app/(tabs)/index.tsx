@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
@@ -32,25 +32,22 @@ export default function TabOneScreen() {
   const [displayedRates, setDisplayedRates] = useState<ExchangeRate[]>([]);
   const [allRates, setAllRates] = useState<ExchangeRate[]>([]);
   const [loadingRates, setLoadingRates] = useState<boolean>(true);
-  //const currencyData = require('../../avaliable_currencies.json');
-  const [currencyData, setCurrencyData] = useState<any>(null);
+  const [avaliableCurrencies, setAvaliableCurrencies] = useState<any>(null);
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof Themes>("light");
-  const data = [
-    { value: 15, label: 'Jan' },
-    { value: 30, label: 'Feb' },
-    { value: 26, label: 'Mar' },
-    { value: 40, label: 'Apr' },
-  ];
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const { width: windowWidth } = useWindowDimensions();
+  const colors = Themes[selectedTheme];
+  const [amountBase, setAmountBase] = useState<number>(1);
+  const [amountTarget, setAmountTarget] = useState<number>(1);
   
+  // avaliable currencies
   useEffect(() => {
     const fetchCurrencies = async () => {
       try {
         // Use your computer's IP address instead of localhost!
         const response = await fetch("http://localhost:8000/currencies"); 
         const json = await response.json();
-        setCurrencyData(json);
+        setAvaliableCurrencies(json);
       } catch (error) {
         console.error("Failed to fetch currencies:", error);
       }
@@ -58,6 +55,7 @@ export default function TabOneScreen() {
     fetchCurrencies();
   }, []);
 
+  // syncs theme on initial load and listens for real-time theme updates
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('themeChanged', (newTheme) => {
       setSelectedTheme(newTheme);
@@ -69,30 +67,7 @@ export default function TabOneScreen() {
     return () => subscription.remove();
   }, []);
 
-  /*useEffect(() => {
-    if (allRates.length > 0) {
-      // 1. FILTER: Pick one currency, otherwise the chart is nonsensical
-      // You can replace 'ZAR' with a state variable like selectedCurrency
-      const currencyHistory = allRates.filter(item => item.target_currency === 'ZAR');
-
-      // 2. MAP: Convert your JSON keys to 'value' and 'label'
-      const formattedData: ChartPoint[] = currencyHistory.map((item) => ({
-        value: Number(item.rate),
-        // Format the date: "May 01"
-        label: new Date(item.created_at).toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        dataPointText: item.rate.toString(),
-      }));
-
-      // 3. SORT: Ensure the line goes from oldest to newest
-      formattedData.sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime());
-
-      setChartData(formattedData);
-    }
-  }, [allRates, targetCurrency]); // Runs whenever data or chosen currency changes*/
-
+  // filters, deduplicates, and formats the last 10 historical rates for the chart
   useEffect(() => {
     if (allRates.length > 0) {
       const filteredData = allRates
@@ -102,7 +77,6 @@ export default function TabOneScreen() {
         )
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-      // Fix: Only keep the last entry for each unique date to prevent stacking
       const uniqueDates = [];
       const seenDates = new Set();
 
@@ -115,24 +89,28 @@ export default function TabOneScreen() {
         if (!seenDates.has(dateLabel)) {
           uniqueDates.push({
             value: Number(filteredData[i].rate),
-            label: dateLabel, // Just the date, no time.
+            label: dateLabel, 
           });
           seenDates.add(dateLabel);
         }
       }
 
-      setChartData(uniqueDates.reverse().slice(-10)); // Shows last 10 unique days
+      // 1. Process your reversed and sliced array first
+      const finalData = uniqueDates.reverse().slice(-10);
+
+      // 2. 👇 Append invisible padding strictly to the absolute last element
+      if (finalData.length > 1) {
+        finalData[0].label = `\u00A0\u00A0\u00A0${finalData[0].label}`;
+        const lastIndex = finalData.length - 1;
+        finalData[lastIndex].label = `${finalData[lastIndex].label}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0`;
+      }
+
+      // 3. Set the state with your modified array
+      setChartData(finalData); 
     }
   }, [allRates, targetCurrency, baseCurrency]);
 
-  const handleThemeChange = async (itemValue: keyof typeof Themes) => {
-    setSelectedTheme(itemValue); // Changes the colors NOW
-    await saveTheme(itemValue);  // Saves to AsyncStorage for NEXT TIME
-    DeviceEventEmitter.emit('themeChanged', itemValue); // Broadcasting the new theme to all the screens and tabs 
-  };
-
-  const colors = Themes[selectedTheme];
-
+  // fetches local rates on base currency change, falling back to an API sync if empty.
   useEffect(() => {
     const getRates = async () => {
       console.log("⚠️FETCH STARTING FOR:", baseCurrency);
@@ -170,6 +148,7 @@ export default function TabOneScreen() {
     if (baseCurrency) getRates();
   }, [baseCurrency]);
 
+  // indicator for loading
   if (loadingRates) {
     return (
       <View style={{
@@ -183,37 +162,33 @@ export default function TabOneScreen() {
     );
   }
 
-  if (!currencyData) {
+  // i feel like its an old indicator for loading
+  if (!avaliableCurrencies) {
     return <Text>Loading Currencies...</Text>;
   }
 
-  //const screenWidth = Dimensions.get('window').width;
-  
-  const chartWidth = windowWidth / 2 - 200;
+  // Find the newest rate matching your selected Base and Target currencies
+  const currentRateObject = allRates
+    .filter(item => 
+      item.base_currency?.trim().toUpperCase() === baseCurrency.trim().toUpperCase() && 
+      item.target_currency?.trim().toUpperCase() === targetCurrency.trim().toUpperCase()
+    )
+    // Sort descending by date so the newest record is at index [0]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
-  /* this was used before to show the welcome message from the servers main endpoint
-  useEffect(() => {
-    const API_URL = "http://127.0.0.1:8000";
+  // Extract the numerical rate value. Fallback to 1 if no match is found yet.
+  const activeRate = currentRateObject ? Number(currentRateObject.rate) : 1;
 
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => setMessage(data.message))
-      .catch(err => console.error("Connection problem", err));
-  }, []);
-  */ 
-
-  // Some helpful calculations to make the graph look good and align
+  // Calculate the real converted target amount
+  const calculatedTargetAmount = amountBase * activeRate;
   
   const sidePadding = 20; 
   const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
-
   const values = chartData.map(d => d.value);
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min;
-  // If it's a flat line, range is 0. We use a 10% buffer of the value itself.
-  // If it's a moving line, we add 20% of the range as padding.
-  const buffer = range === 0 ? max * 0.1 : range * 0.2;
+  const buffer = range === 0 ? max * 0.1 : range * 0.2; // If it's a flat line, range is 0. We use a 10% buffer of the value itself. If it's a moving line, we add 20% of the range as padding.
   const chartMin = min - buffer;
   const chartMax = (max + buffer) - chartMin; // This is the "height" of the chart
 
@@ -254,7 +229,7 @@ export default function TabOneScreen() {
       backgroundColor: '#fff',
       borderRadius: 30,
       marginLeft: 25,            // Gap between the two platforms
-      padding: 15,
+      padding: 25,
       justifyContent: 'center',
       alignItems: 'center',
       // Subtle Shadow
@@ -263,7 +238,7 @@ export default function TabOneScreen() {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
-      overflow: 'hidden', // IMPORTANT: This clips children (like FlatList) to the rounded corners
+      overflow: 'visible',
     },
     picker: {
       width: '100%',        // Fill the left half
@@ -304,6 +279,7 @@ export default function TabOneScreen() {
     },
   });
 
+  console.log(chartData);
   return (
     <View style={styles.container}>
       <View style={styles.rowContainer}>
@@ -311,31 +287,69 @@ export default function TabOneScreen() {
         {/* LEFT SIDE: Picker and Exchange Rates (50%) */}
         <View style={styles.leftColumn}>
 
-          <View style={styles.pickersContainer}>
+          <View style={[styles.pickersContainer, {alignSelf: 'stretch'}]}>
 
             {/* PICKER FOR A BASE CURRENCY */}
-            <Picker
-              style={styles.picker} 
-              mode="dropdown"
-              selectedValue={baseCurrency} 
-              onValueChange={(itemValue) => setBaseCurrency(itemValue)}
-            >  
-              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-              ))}
-            </Picker>
+            <View style={{flexDirection: 'column', gap: 1, flex: 1, minWidth: 0}}>
+              <Text style={{flex: 0.1}}>Base currency:</Text>
+              <Picker
+                style={[styles.picker, {padding: 5}]}
+                mode="dropdown"
+                selectedValue={baseCurrency} 
+                onValueChange={(itemValue) => setBaseCurrency(itemValue)}
+              >  
+                {avaliableCurrencies?.currencies?.map(([code, name]: [string, string]) => (
+                  <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+                ))}
+              </Picker>
+              <Text style={{flex: 0.1}}>Amount of Base currency:</Text>
+              <TextInput
+                keyboardType="numeric"
+                // 1. Convert your number state to a string for the component
+                value={amountBase === 0 ? '' : amountBase.toString()} 
+                onChangeText={(text) => {
+                  // Regular expression: removes anything that is NOT a digit or a decimal point
+                  const cleanedText = text.replace(/[^0-9.]/g, '');
+                  
+                  // Prevents breaking on multiple decimal points
+                  const parts = cleanedText.split('.');
+                  if (parts.length > 2) return;
+
+                  // 2. Allow trailing decimals or empty inputs while typing so it doesn't glitch
+                  if (cleanedText === '' || cleanedText.endsWith('.')) {
+                    // Temporary fallback: TypeScript requires a number, so we use 0 
+                    // or track a secondary string state if you want to allow typing decimals smoothly.
+                    setAmountBase(parseFloat(cleanedText) || 0);
+                    return;
+                  }
+
+                  // 3. Convert the safe string back to a number for your state
+                  const numericValue = parseFloat(cleanedText);
+                  if (!isNaN(numericValue)) {
+                    setAmountBase(numericValue);
+                  }
+                }}
+              />
+            </View>
 
             {/* PICKER FOR A TARGET CURRENCY */}
-            <Picker
-              style={styles.picker} 
-              mode="dropdown"
-              selectedValue={targetCurrency} 
-              onValueChange={(itemValue) => setTargetCurrency(itemValue)}
-            >  
-              {currencyData?.currencies?.map(([code, name]: [string, string]) => (
-                <Picker.Item key={code} label={`${code} ${name}`} value={code} />
-              ))}
-            </Picker>
+            <View style={{flexDirection: 'column', gap: 3, flex: 1, minWidth: 0}}>
+              <Text style={{flex: 0.1}}>Target currency:</Text>
+              <Picker
+                style={[styles.picker, {padding: 5}]}
+                mode="dropdown"
+                selectedValue={targetCurrency} 
+                onValueChange={(itemValue) => setTargetCurrency(itemValue)}
+              >  
+                {avaliableCurrencies?.currencies?.map(([code, name]: [string, string]) => (
+                  <Picker.Item key={code} label={`${code} ${name}`} value={code} />
+                ))}
+              </Picker>
+              <Text style={{flex: 0.1}}>Amount of Target currency:</Text>
+              <TextInput
+                value={amountBase === 0 ? '' : calculatedTargetAmount.toFixed(4)}               
+              />
+            </View>
           </View>
 
           <FlatList
@@ -362,20 +376,27 @@ export default function TabOneScreen() {
         <View style={styles.rightColumn}>
           <LineChart
             data={chartData}
-            yAxisOffset={chartMin} // Starts the Y-axis just below your lowest rate
+            yAxisOffset={chartMin} 
             maxValue={chartMax}
-            height={450}               // Increase this until it matches the left side
+            height={450}               
             color={'#161616'} 
-            thickness={2}              // Thicker line looks better on large graphs
+            thickness={2}              
             yAxisThickness={0}
             xAxisThickness={0}
-            yAxisLabelWidth={75} // Give it a generous fixed width
-            formatYLabel={(label) => parseFloat(label).toFixed(2)}
+            yAxisLabelWidth={75} 
+            formatYLabel={(label) => parseFloat(label).toFixed(3)}
             yAxisLabelContainerStyle={{justifyContent: 'center'}}
             adjustToWidth
             width={calculatedWidth}
             initialSpacing={sidePadding} 
             endSpacing={sidePadding} 
+            
+            // Forces the text box to maintain strict single-line structure
+            xAxisTextNumberOfLines={1}    
+            xAxisLabelTextStyle={{
+              textAlign: 'center',
+              color: '#000',
+            }}
           />
         </View>
       </View>
