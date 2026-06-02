@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
@@ -37,6 +37,8 @@ export default function TabOneScreen() {
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const { width: windowWidth } = useWindowDimensions();
   const colors = Themes[selectedTheme];
+  const [amountBase, setAmountBase] = useState<number>(1);
+  const [amountTarget, setAmountTarget] = useState<number>(1);
   
   // avaliable currencies
   useEffect(() => {
@@ -164,6 +166,21 @@ export default function TabOneScreen() {
   if (!avaliableCurrencies) {
     return <Text>Loading Currencies...</Text>;
   }
+
+  // Find the newest rate matching your selected Base and Target currencies
+  const currentRateObject = allRates
+    .filter(item => 
+      item.base_currency?.trim().toUpperCase() === baseCurrency.trim().toUpperCase() && 
+      item.target_currency?.trim().toUpperCase() === targetCurrency.trim().toUpperCase()
+    )
+    // Sort descending by date so the newest record is at index [0]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+  // Extract the numerical rate value. Fallback to 1 if no match is found yet.
+  const activeRate = currentRateObject ? Number(currentRateObject.rate) : 1;
+
+  // Calculate the real converted target amount
+  const calculatedTargetAmount = amountBase * activeRate;
   
   const sidePadding = 20; 
   const calculatedWidth = (windowWidth / 2 - 200) - (sidePadding * 2);
@@ -273,7 +290,7 @@ export default function TabOneScreen() {
           <View style={[styles.pickersContainer, {alignSelf: 'stretch'}]}>
 
             {/* PICKER FOR A BASE CURRENCY */}
-            <View style={{flexDirection: 'column', gap: 3, flex: 1, minWidth: 0}}>
+            <View style={{flexDirection: 'column', gap: 1, flex: 1, minWidth: 0}}>
               <Text style={{flex: 0.1}}>Base currency:</Text>
               <Picker
                 style={[styles.picker, {padding: 5}]}
@@ -285,6 +302,34 @@ export default function TabOneScreen() {
                   <Picker.Item key={code} label={`${code} ${name}`} value={code} />
                 ))}
               </Picker>
+              <Text style={{flex: 0.1}}>Amount of Base currency:</Text>
+              <TextInput
+                keyboardType="numeric"
+                // 1. Convert your number state to a string for the component
+                value={amountBase === 0 ? '' : amountBase.toString()} 
+                onChangeText={(text) => {
+                  // Regular expression: removes anything that is NOT a digit or a decimal point
+                  const cleanedText = text.replace(/[^0-9.]/g, '');
+                  
+                  // Prevents breaking on multiple decimal points
+                  const parts = cleanedText.split('.');
+                  if (parts.length > 2) return;
+
+                  // 2. Allow trailing decimals or empty inputs while typing so it doesn't glitch
+                  if (cleanedText === '' || cleanedText.endsWith('.')) {
+                    // Temporary fallback: TypeScript requires a number, so we use 0 
+                    // or track a secondary string state if you want to allow typing decimals smoothly.
+                    setAmountBase(parseFloat(cleanedText) || 0);
+                    return;
+                  }
+
+                  // 3. Convert the safe string back to a number for your state
+                  const numericValue = parseFloat(cleanedText);
+                  if (!isNaN(numericValue)) {
+                    setAmountBase(numericValue);
+                  }
+                }}
+              />
             </View>
 
             {/* PICKER FOR A TARGET CURRENCY */}
@@ -300,6 +345,10 @@ export default function TabOneScreen() {
                   <Picker.Item key={code} label={`${code} ${name}`} value={code} />
                 ))}
               </Picker>
+              <Text style={{flex: 0.1}}>Amount of Target currency:</Text>
+              <TextInput
+                value={amountBase === 0 ? '' : calculatedTargetAmount.toFixed(4)}               
+              />
             </View>
           </View>
 
