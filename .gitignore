@@ -38,3 +38,6 @@ avaliable_currencies.json
 # Editors
 .vscode/
 .idea/
+
+# User preferencies
+configuration.json
