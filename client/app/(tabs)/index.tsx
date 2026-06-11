@@ -39,6 +39,8 @@ export default function TabOneScreen() {
   const colors = Themes[selectedTheme];
   const [amountBase, setAmountBase] = useState<number>(1);
   const [amountTarget, setAmountTarget] = useState<number>(1);
+  const [apiKey, setApiKey] = useState('');
+  
   
   // avaliable currencies
   useEffect(() => {
@@ -102,7 +104,7 @@ export default function TabOneScreen() {
       if (finalData.length > 1) {
         finalData[0].label = `\u00A0\u00A0\u00A0${finalData[0].label}`;
         const lastIndex = finalData.length - 1;
-        finalData[lastIndex].label = `${finalData[lastIndex].label}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0`;
+        finalData[lastIndex].label = `${finalData[lastIndex].label}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0`;
       }
 
       // 3. Set the state with your modified array
@@ -162,7 +164,6 @@ export default function TabOneScreen() {
     );
   }
 
-  // i feel like its an old indicator for loading
   if (!avaliableCurrencies) {
     return <Text>Loading Currencies...</Text>;
   }

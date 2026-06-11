@@ -20,11 +20,12 @@ from contextlib import asynccontextmanager
 import logging
 from pydantic import BaseModel
 from typing import List
+import base64
 
 
-ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(ENV_PATH)
-apikey=os.getenv('API_KEY')
+# ENV_PATH = Path(__file__).resolve().parent / ".env"
+# load_dotenv(ENV_PATH)
+# apikey=os.getenv('API_KEY')
 
 # 1. Stop Uvicorn from repeating startup messages
 #logging.getLogger("uvicorn.error").propagate = False
@@ -35,8 +36,26 @@ logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 FILE_PATH = "../server/avaliable_currencies.json"
 
+# Pydantic model to validate incoming data
+class KeyUpdate(BaseModel):
+    api_key: str
+
+def encode_key(plain_key: str) -> str:
+    # A simple obscurement layer so it's not plain text in the JSON
+    return base64.b64encode(plain_key.encode()).decode()
+
+def decode_key(encoded_key: str) -> str:
+    return base64.b64decode(encoded_key.encode()).decode()
+
+# When saving:
+# all_keys[payload.user_id] = encode_key(payload.api_key)
+
+# When reading:
+# original_key = decode_key(all_keys.get(user_id))
+
 
 async def fetch_supported_codes():
+    apikey = RUNTIME_CONFIG["API_KEY"]
     if not apikey:
         print("CRITICAL ERROR: API_KEY is missing from .env file!")
         return 
@@ -127,9 +146,28 @@ app.add_middleware(
     max_age=600,
 )
 
-#@app.on_event("startup") # OUTDATED FUNCTION 
-#def startup_create_tables():
-#    models.Base.metadata.create_all(bind=engine)
+CONFIG_PATH = Path(__file__).resolve().parent / "configuration.json"
+# Load initial values into a mutable runtime state container
+RUNTIME_CONFIG = {"API_KEY": ""}
+
+def load_config_into_memory(): 
+
+    if not CONFIG_PATH.exists():
+        default_structure = {"API_KEY": ""}
+        
+        with open(CONFIG_PATH, "w") as file:
+            json.dump(default_structure, file, indent=4)
+        print("📁 configuration.json was missing. Created automatically with default template.")
+
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH, "r") as file:
+            data = json.load(file)
+            RUNTIME_CONFIG["API_KEY"] = data.get("API_KEY", "")
+
+# Load it once right when the file spins up
+load_config_into_memory()
+
+
 
 def get_db():
     db = SessionLocal()
@@ -144,12 +182,36 @@ async def root():
 
 @app.get("/check_api")
 async def checkapi():
-    return {"key found": bool(apikey), "prefix":apikey[:4] + "****" if apikey else "Not found"}
+    apikey = RUNTIME_CONFIG["API_KEY"]
+    return {"keyFound": bool(apikey), "prefix":'***************' + apikey[-5:] if apikey else "Not found"}
 
 @app.get("/currencies")
 def get_currencies():
     with open("../server/avaliable_currencies.json", "r") as f:
         return json.load(f)
+    
+@app.post("/update_key")
+async def update_key(payload: KeyUpdate):
+    if not payload.api_key.strip():
+        raise HTTPException(status_code = 400, detail = "api key cannot be empty")
+    try: 
+        config_data = {}
+        if CONFIG_PATH.exists():
+            with open(CONFIG_PATH, "r") as file:
+                config_data = json.load(file)
+        
+        config_data["API_KEY"] = payload.api_key
+
+        with open(CONFIG_PATH, "w") as file:
+            json.dump(config_data, file, indent=4)
+        
+        RUNTIME_CONFIG["API_KEY"] = payload.api_key
+        
+        return {"status": "success", "message": "API Key updated successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save the key: {str(e)}")
+    
 
 def check_rate_exists(db: Session, base_currency: str):
     twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -217,6 +279,7 @@ async def all_rates(base_currency: str, db: Session = Depends(get_db)):
 
 @app.get("getrateviaapi/{base_currency}")
 async def getrateviaapi(base_currency: str):
+    apikey = RUNTIME_CONFIG["API_KEY"]
     base_currency=base_currency.upper()
     if not apikey:
         raise HTTPException(status_code=500, detail="API_KEY is missing. Set API_KEY in environment.")
@@ -245,6 +308,7 @@ async def getrateviaapi(base_currency: str):
 async def fetch_and_save(base_currency: str, db: Session = Depends(get_db)):
     
     
+    apikey = RUNTIME_CONFIG["API_KEY"]
     utc_now = datetime.now(timezone.utc)
     latest_row = db.query(ExchangeRate).filter(func.date(ExchangeRate.created_at) == utc_now.date(), ExchangeRate.base_currency == base_currency.upper()).first()
     if latest_row:
