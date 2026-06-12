@@ -104,7 +104,15 @@ export default function TabTwoScreen() {
       paddingVertical: 14,
       paddingHorizontal: 40,
       borderRadius: 15,
-    }
+    },
+    whiteBlank: {
+      backgroundColor: 'white',
+      paddingVertical: 14,
+      paddingHorizontal: 40,
+      borderRadius: 15,
+      borderColor: 'black',
+      borderWidth: 1,
+    },
   });
 
   if (loading) {
@@ -144,33 +152,40 @@ export default function TabTwoScreen() {
         
         {apiKey && apiKey.keyFound ? (
           /* Safer object lookup notation matching how you accessed 'key found' */
-          <Text>{apiKey.prefix}</Text>
+          <Text style={styles.whiteBlank}>{apiKey.prefix}</Text>
         ) : (
           <Text>Key not found</Text>
         )}
       </>
       <View style={{ height: 10 }} />
-      <TextInput
-        placeholder="Enter new API Key"
-        placeholderTextColor="#999"
-        value={newApiKey}
-        onChangeText={setNewApiKey}
-        // secureTextEntry={true}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+      
+      <Text>Change your api key:</Text>
       <View style={{ height: 10 }} />
-      <TouchableOpacity  
-        onPress={handleKeySave}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text>Save Key</Text>
-        )}
-      </TouchableOpacity>
-      <View style={{ height: 10 }} />
+      <View style={{flexDirection: 'row', gap: 3, backgroundColor: colors.background}}>
+        <TextInput
+          style={[styles.whiteBlank, {textAlign: 'center'}]}
+          placeholder="Enter your API Key here"
+          placeholderTextColor="#999"
+          value={newApiKey}
+          onChangeText={setNewApiKey}
+          // secureTextEntry={true}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <View style={{ height: 10 }} />
+        <TouchableOpacity
+          style={[styles.whiteBlank, {paddingHorizontal: 5}]}
+          onPress={handleKeySave}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text>Save Key</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      <View style={{ height: 30 }} />
       <Link href='https://app.exchangerate-api.com/sign-up' target="_blank" rel="noopener noreferrer">Click here to obtain a free key</Link>
     </View>
   );
