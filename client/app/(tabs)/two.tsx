@@ -59,6 +59,9 @@ export default function TabTwoScreen() {
           setNewQoutaDate(data.new_quota);
         } else {
           setApiGood(false);
+          setRequestsLeft(0);
+          setPlanQuota(0);
+          setNewQoutaDate(0);
         }
       } catch (error) {
         console.error('FAILED TO FETCH FROM THE BACKGROUND: ', error);
@@ -109,7 +112,8 @@ export default function TabTwoScreen() {
       } 
     } catch (error) {
       console.error(error);
-    } finally {
+    } finally { 
+      setRequestsLeft(null);
       setLoading(false);
     }
   };
@@ -200,7 +204,7 @@ export default function TabTwoScreen() {
             <Text style={styles.whiteBlank}>{apiKey.prefix}</Text>
 
             <TouchableOpacity onPress={() => setCheckApiTrigger(prev => prev+1)}>
-              <Text style={[styles.whiteBlank, {paddingHorizontal: 5}]}>Check</Text>
+              <Text style={[styles.whiteBlank, {paddingHorizontal: 5}]}> Check </Text>
             </TouchableOpacity>
 
           </View>
@@ -254,7 +258,7 @@ export default function TabTwoScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text>Save Key</Text>
+            <Text> Save </Text>
           )}
         </TouchableOpacity>
       </View>
