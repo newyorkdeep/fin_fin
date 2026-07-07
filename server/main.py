@@ -1,5 +1,5 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import requests
@@ -148,7 +148,7 @@ app.add_middleware(
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configuration.json"
 # Load initial values into a mutable runtime state container
-RUNTIME_CONFIG = {"API_KEY": ""}
+RUNTIME_CONFIG = {"API_KEY": ""}    # This is where API Key is stored
 
 def load_config_into_memory(): 
 
@@ -212,6 +212,45 @@ async def update_key(payload: KeyUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save the key: {str(e)}")
     
+@app.get("/quota")
+async def check_quota():
+    apikey = RUNTIME_CONFIG["API_KEY"]
+
+    url = f"https://v6.exchangerate-api.com/v6/{apikey}/quota"
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, timeout=5.0)
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=f'Error: {response.status_code}'
+                )
+            
+            data = response.json()
+
+            # Validate response schema
+            if data.get("result") == "success":
+                return {
+                    "status": data.get("result"),
+                    "requests_remaining": data.get("requests_remaining"),
+                    "plan_quota": data.get("plan_quota"),
+                    "new_quota": data.get("refresh_day_of_month")
+                }
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=f"API error: {data.get('error-type', 'unknown')}"
+                )
+                
+        except httpx.RequestError as exc:
+            # Network failures, DNS issues, or timeouts
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Could not reach ExchangeRate-API server: {exc}"
+            )
+
 
 def check_rate_exists(db: Session, base_currency: str):
     twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
