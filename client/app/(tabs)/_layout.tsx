@@ -33,18 +33,19 @@ export default function TabLayout() {
   const styles = StyleSheet.create({
     tabBar: {
       //position: 'absolute',
-      bottom: 25,       // Space from the bottom of the screen
-      height: 50,       // Fixed height
+      bottom: 20,       
+      height: 60,      
       backgroundColor: colors.tabBar,
-      borderRadius: 30, // Half of height for perfect circles
+      borderRadius: 20, 
       borderTopWidth: 0,
-      elevation: 5,     // Shadow for Android
+      elevation: 0,   
       shadowColor: '#000', // Shadow for iOS
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
       alignSelf: "center",
-      width: "10%",
+      width: "90%",   
+      paddingHorizontal: 10,
     },
   });
 

@@ -10,16 +10,16 @@ export const Themes = {
     ...SharedLayout,
     background: '#f5f5f7',
     text: '#47473f',
-    tabBar: '#cbd1d1',
-    activeicon: '#47473f',
-    inactiveicon: '#a5a5a5', 
+    tabBar: '#ffffff',
+    activeicon: '#2f95dc',
+    inactiveicon: '#a5a5a5',
   },
   dark: {
     ...SharedLayout,
     background: '#2d2d2d',
     text: '#FFFFFF',
-    tabBar: '#595959',
-    activeicon: '#ffffff',
+    tabBar: '#000000',
+    activeicon: '#fff',
     inactiveicon: '#747474'
   },
 };
